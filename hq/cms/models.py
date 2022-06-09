@@ -22,6 +22,7 @@ class Question(models.Model):
     score_type = models.CharField(max_length = 10, blank = False, null = False)
     score_weight = models.FloatField(validators = [MinValueValidator(0)])
     # extras
+    comment = models.ManyToManyField("Comment", blank=True, null=True)
     resources = models.JSONField(blank=True, null=True)
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
@@ -121,3 +122,12 @@ class Qtype(models.Model):
 
     def __str__(self):
         return self.name
+
+class Comment(models.Model):
+    author = models.ForeignKey("User", on_delete = models.CASCADE, related_name="commentor")
+    content = models.TextField(max_length=500)
+    date_posted = models.DateTimeField(default=datetime.now)
+    mentioned = models.ManyToManyField("User", null=True, related_name='question_mentioned')
+
+    def __str__(self):
+        return self.content
