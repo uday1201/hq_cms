@@ -1,26 +1,28 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from datetime import datetime
+from django.contrib.auth.models import AbstractUser
+
 # Create your models here.
 class Question(models.Model):
     qid = models.AutoField(primary_key=True)
     # details of the question
-    cwf = models.ManyToManyField("Cwf") # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
-    kt = models.ManyToManyField("Kt")
-    role = models.ManyToManyField("Role")
+    cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
+    kt = models.ManyToManyField("Kt",blank=True)
+    role = models.ManyToManyField("Role",blank=True)
     stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True) # if the stage id is delelted it will set this field to NULL
     # assests for the question
-    exhibits = models.ManyToManyField("Exhibit")
-    excels = models.ManyToManyField("Excel")
-    context = models.JSONField()
+    exhibits = models.ManyToManyField("Exhibit", blank=True)
+    excels = models.ManyToManyField("Excel", blank=True)
+    context = models.JSONField(blank=True, null=True)
     # content of the question
     text = models.CharField(max_length = 100, blank = False, null = False)
     qtype = models.ForeignKey("Qtype", on_delete = models.SET_NULL, null=True)
-    options = models.JSONField()
+    options = models.JSONField(blank=True, null=True)
     score_type = models.CharField(max_length = 10, blank = False, null = False)
     score_weight = models.FloatField(validators = [MinValueValidator(0)])
     # extras
-    resources = models.JSONField()
+    resources = models.JSONField(blank=True, null=True)
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_approver') # if the user is deleted it will set this field to NULL
@@ -28,13 +30,13 @@ class Question(models.Model):
     last_edited = models.DateTimeField(default=datetime.now, blank = False)
 
     def __str__(self):
-        return self.name
+        return str(self.qtype_id)
 
 class Assessment(models.Model):
     aid = models.AutoField(primary_key=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
-    questions = models.ManyToManyField("Question")
-    role = models.ManyToManyField("Role")
+    questions = models.ManyToManyField("Question",blank=True)
+    role = models.ManyToManyField("Role",blank=True)
     remarks = models.CharField(max_length=1000, blank = True)
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_creator') # if the creator user is deleted it will set this field to NULL
@@ -42,7 +44,7 @@ class Assessment(models.Model):
     last_updated = models.DateTimeField(default=datetime.now, blank = False)
 
     def __str__(self):
-        return self.name
+        return str(self.aid)
 
 class Role(models.Model):
     role_id = models.AutoField(primary_key=True)
@@ -50,7 +52,7 @@ class Role(models.Model):
     role_name = models.CharField(max_length = 100, blank = False)
 
     def __str__(self):
-        return self.name
+        return self.role_name
 
 class Exhibit(models.Model):
     exhibit_id = models.AutoField(primary_key=True)
@@ -70,19 +72,17 @@ class Excel(models.Model):
     alt_text = models.CharField(max_length = 100, blank = True)
 
     def __str__(self):
-        return self.name
+        return self.alt_text
+
 
 # for the users we can also use the Django's inbuilt user management system
-class User(models.Model):
-    user_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length = 100, blank = False)
+# we will use the inbuilt one
+class User(AbstractUser):
     email = models.EmailField(max_length = 200)
     access_role = models.CharField(max_length = 100)
 
     def __str__(self):
-        return self.name
-
-# class QuesToRole(models.Model): not required
+        return self.email
 
 class Cwf(models.Model):
     cwf_id = models.AutoField(primary_key=True)
