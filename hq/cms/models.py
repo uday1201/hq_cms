@@ -5,6 +5,13 @@ from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 class Question(models.Model):
+    STATUS_CHOICES = (
+    ("SAVED", "Saved"),
+    ("UNDERREVIEW", "Under Review"),
+    ("REVIEWED", "Reviewed"),
+    ("ARCHIVED", "Archived"),
+    )
+
     qid = models.AutoField(primary_key=True)
     # details of the question
     cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
@@ -22,13 +29,18 @@ class Question(models.Model):
     score_type = models.CharField(max_length = 10, blank = False, null = False)
     score_weight = models.FloatField(validators = [MinValueValidator(0)])
     # extras
-    comment = models.ManyToManyField("Comment", blank=True, null=True)
     resources = models.JSONField(blank=True, null=True)
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_approver') # if the user is deleted it will set this field to NULL
     last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
     last_edited = models.DateTimeField(default=datetime.now, blank = False)
+    # miscellaneous fields
+    idealtime = models.FloatField(blank=True, null=True)
+    difficulty_level = models.CharField(max_length=50, blank=True, null=True)
+    misc = models.JSONField(blank=True, null=True)
+    # status of the question
+    status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
 
     def __str__(self):
         return str(self.qtype_id)
@@ -58,19 +70,22 @@ class Role(models.Model):
 class Exhibit(models.Model):
     exhibit_id = models.AutoField(primary_key=True)
     # we have 2 choices here, if we want to store the assests externally on the cloud we need to have a URL field, otherwise we can also use Django media manager with imagefield
-    url = models.URLField(max_length = 250)
+    #url = models.URLField(max_length = 250)
     #file = models.FileField(upload_to = 'exhibits/')
-    #image = models.ImageField(upload_to = 'exhibits/')
+    image = models.ImageField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
     type = models.CharField(max_length = 100, blank = True)
+    created_on = models.DateTimeField(default=datetime.now, blank = False)
 
     def __str__(self):
         return self.name
 
 class Excel(models.Model):
     excel_id = models.AutoField(primary_key=True)
-    url = models.URLField(max_length = 250)
+    #url = models.URLField(max_length = 250)
+    file = models.FileField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
+    created_on = models.DateTimeField(default=datetime.now, blank = False)
 
     def __str__(self):
         return self.alt_text
@@ -90,6 +105,7 @@ class Cwf(models.Model):
     code = models.CharField(max_length = 100, unique=True, blank = False, null = False)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
+    #assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assigned_to')
 
     def __str__(self):
         return self.name
@@ -127,7 +143,8 @@ class Comment(models.Model):
     author = models.ForeignKey("User", on_delete = models.CASCADE, related_name="commentor")
     content = models.TextField(max_length=500)
     date_posted = models.DateTimeField(default=datetime.now)
-    mentioned = models.ManyToManyField("User", null=True, related_name='question_mentioned')
+    last_updated_on = models.DateTimeField(default=datetime.now)
+    mentioned = models.ManyToManyField("User", related_name='question_mentioned')
 
     def __str__(self):
         return self.content
