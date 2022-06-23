@@ -68,10 +68,10 @@ class StageViewSet(viewsets.ModelViewSet):
 
 class QtypeViewSet(viewsets.ModelViewSet):
     queryset = Qtype.objects.all().order_by('-qtype_id')
-    serializer_class = Qtype
+    serializer_class = QtypeSerializer
     #permission_classes = (IsAuthenticated,IsAdminUser)
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all().order_by('-last_updated_on')
-    serializer_class = Comment
+    serializer_class = CommentSerializer
     #permission_classes = (IsAuthenticated,IsAdminUser)

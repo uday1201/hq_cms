@@ -5,12 +5,14 @@ from .models import *
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
-        fields = '__all__'
-        
+        fields = ['problem_statement','questions','role','remarks','creator','approved_by']
+
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = '__all__'
+        fields = ['cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by']
+
+
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
@@ -19,12 +21,12 @@ class RoleSerializer(serializers.ModelSerializer):
 class ExhibitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exhibit
-        fields = '__all__'
+        fields = ['image','alt_text','type']
 
 class ExcelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Excel
-        fields = '__all__'
+        fields = ['file','alt_text']
 
 class CwfSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,4 +51,4 @@ class QtypeSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ['author','content','question','mentioned']

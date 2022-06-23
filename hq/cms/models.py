@@ -11,7 +11,6 @@ class Question(models.Model):
     ("REVIEWED", "Reviewed"),
     ("ARCHIVED", "Archived"),
     )
-
     qid = models.AutoField(primary_key=True)
     # details of the question
     cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
@@ -34,7 +33,8 @@ class Question(models.Model):
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_approver') # if the user is deleted it will set this field to NULL
     last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
-    last_edited = models.DateTimeField(default=datetime.now, blank = False)
+    last_edited = models.DateTimeField(default=datetime.now, blank = True)
+    created = models.DateTimeField(auto_now_add=True, blank=True)
     # miscellaneous fields
     idealtime = models.FloatField(blank=True, null=True)
     difficulty_level = models.CharField(max_length=50, blank=True, null=True)
@@ -54,7 +54,8 @@ class Assessment(models.Model):
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_approver') # if the user is deleted it will set this field to NULL
-    last_updated = models.DateTimeField(default=datetime.now, blank = False)
+    last_updated = models.DateTimeField(default=datetime.now, blank = True)
+    created = models.DateTimeField(auto_now_add=True, blank=True)
 
     def __str__(self):
         return str(self.aid)
@@ -75,17 +76,17 @@ class Exhibit(models.Model):
     image = models.ImageField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
     type = models.CharField(max_length = 100, blank = True)
-    created_on = models.DateTimeField(default=datetime.now, blank = False)
+    created_on = models.DateTimeField(default=datetime.now, blank = True)
 
     def __str__(self):
-        return self.name
+        return self.alt_text
 
 class Excel(models.Model):
     excel_id = models.AutoField(primary_key=True)
     #url = models.URLField(max_length = 250)
     file = models.FileField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
-    created_on = models.DateTimeField(default=datetime.now, blank = False)
+    created_on = models.DateTimeField(default=datetime.now, blank = True)
 
     def __str__(self):
         return self.alt_text
@@ -140,11 +141,13 @@ class Qtype(models.Model):
         return self.name
 
 class Comment(models.Model):
+    comment_id = models.AutoField(primary_key=True)
     author = models.ForeignKey("User", on_delete = models.CASCADE, related_name="commentor")
+    question = models.ForeignKey("Question", on_delete = models.CASCADE, related_name="commentor")
     content = models.TextField(max_length=500)
-    date_posted = models.DateTimeField(default=datetime.now)
-    last_updated_on = models.DateTimeField(default=datetime.now)
-    mentioned = models.ManyToManyField("User", related_name='question_mentioned')
+    date_posted = models.DateTimeField(auto_now_add=True, blank=True)
+    last_updated_on = models.DateTimeField(auto_now=True, blank = True)
+    mentioned = models.ManyToManyField("User", related_name='question_mentioned', blank=True)
 
     def __str__(self):
         return self.content
