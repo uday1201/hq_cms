@@ -14,6 +14,7 @@ router.register(r'Kt', views.KtViewSet)
 router.register(r'Stage', views.StageViewSet)
 router.register(r'Qtype', views.QtypeViewSet)
 router.register(r'Comment', views.CommentViewSet)
+router.register(r'Users', views.UserViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.

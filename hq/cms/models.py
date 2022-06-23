@@ -99,7 +99,7 @@ class User(AbstractUser):
     access_role = models.CharField(max_length = 100)
 
     def __str__(self):
-        return self.email
+        return self.first_name
 
 class Cwf(models.Model):
     cwf_id = models.AutoField(primary_key=True)
