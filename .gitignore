@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 # migrations
-cms/migrations
+hq/cms/migrations
+hq/exhibits

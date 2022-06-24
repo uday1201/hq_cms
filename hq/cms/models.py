@@ -53,7 +53,7 @@ class Assessment(models.Model):
 
     aid = models.AutoField(primary_key=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
-    questions = models.ManyToManyField("Question",blank=True)
+    qlist = models.ManyToManyField("Question",blank=True)
     role = models.ManyToManyField("Role",blank=True)
     remarks = models.CharField(max_length=1000, blank = True)
     # timestamp and tracking
@@ -61,7 +61,7 @@ class Assessment(models.Model):
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_approver') # if the user is deleted it will set this field to NULL
     last_updated = models.DateTimeField(default=datetime.now, blank = True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
-    assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_assignedto')
+    assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='assessment_assignedto')
     status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
 
     def __str__(self):
@@ -84,6 +84,7 @@ class Exhibit(models.Model):
     alt_text = models.CharField(max_length = 100, blank = True)
     type = models.CharField(max_length = 100, blank = True)
     created_on = models.DateTimeField(default=datetime.now, blank = True)
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='exhibit_creator')
 
     def __str__(self):
         return self.alt_text
@@ -94,6 +95,7 @@ class Excel(models.Model):
     file = models.FileField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
     created_on = models.DateTimeField(default=datetime.now, blank = True)
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='excel_creator')
 
     def __str__(self):
         return self.alt_text

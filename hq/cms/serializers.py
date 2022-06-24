@@ -5,7 +5,7 @@ from .models import *
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
-        fields = ['problem_statement','questions','role','remarks','creator','approved_by','assigned_to','status']
+        fields = ['problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -25,7 +25,7 @@ def HasAdminAccess(user):
     return user['role'] == 'Admin'
 
 class AssessmentSetPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 1
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
@@ -37,14 +37,11 @@ class AssessmentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         user = authenticate_token(self, request)
-        print(user["user_id"])
-        if HasAdminAccess(user):
-            queryset_filter = Assessment.objects.filter(creator=user["user_id"]) | Assessment.objects.filter(assigned_to=user["user_id"])
-            queryset_order = queryset_filter.order_by('-last_updated')
-            serializer = AssessmentSerializer(queryset_order, many=True)
-            return Response(serializer.data)
-        else:
-            raise PermissionDenied()
+        #print(user["user_id"])
+        queryset_filter = Assessment.objects.filter(creator=user["user_id"]) | Assessment.objects.filter(assigned_to=user["user_id"])
+        queryset_order = queryset_filter.order_by('-last_updated')
+        serializer = AssessmentSerializer(queryset_order, many=True)
+        return Response(serializer.data)
 
     def create(self, request):
         user = authenticate_token(self, request)
@@ -54,7 +51,7 @@ class AssessmentViewSet(viewsets.ModelViewSet):
                 serializer.save()
                 return Response({"status" : "Successful entry!", "data": serializer.data}, status=status.HTTP_200_OK)
             else:
-                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                raise PermissionDenied()
 
 
 class Logout(APIView):
@@ -72,7 +69,7 @@ class Logout(APIView):
                         status=status.HTTP_200_OK)
 
 class QuestionSetPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 100
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
@@ -84,30 +81,30 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         queryset = Question.objects.all()
-
+        print(queryset)
         if "assessmentid" in request.headers:
             assessment_query = Assessment.objects.filter(aid=request.headers["assessmentid"])
             #print(assessment_query)
-            question_ids = [a.questions for a in assessment_query]
-            queryset = Question.objects.filter(qid in question_ids)
+            question_ids = [a.qlist for a in assessment_query]
+            queryset = queryset.objects.filter(qid in question_ids)
 
         if "cwf" in request.headers:
-            queryset = Question.objects.filter(request.headers["cwf"] in cwf)
+            queryset = queryset.objects.filter(request.headers["cwf"] in cwf)
 
         if "kt" in request.headers:
-            queryset = Question.objects.filter(request.headers["kt"] in kt)
+            queryset = queryset.objects.filter(request.headers["kt"] in kt)
 
         if "created_by" in request.headers:
-            queryset = Question.objects.filter(creator = request.headers["created_by"])
+            queryset = queryset.objects.filter(creator = request.headers["created_by"])
 
         if "role" in request.headers:
-            queryset = Question.objects.filter(request.headers["role"] in role)
+            queryset = queryset.objects.filter(request.headers["role"] in role)
 
         if "starttime" in request.headers and "endtime" in request.headers:
-            queryset = Question.objects.filter(created__range=[starttime,endtime])
+            queryset = queryset.objects.filter(created__range=[starttime,endtime])
 
-        queryset_order= queryset.order_by('-last_edited')
-        serializer = AssessmentSerializer(queryset, many=True)
+        queryset_order = queryset.order_by('-last_edited')
+        serializer = QuestionSerializer(queryset, many=True)
         return Response(serializer.data)
 
 class ExhibitViewSet(viewsets.ModelViewSet):
