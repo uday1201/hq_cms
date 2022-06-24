@@ -46,6 +46,11 @@ class Question(models.Model):
         return str(self.qtype_id)
 
 class Assessment(models.Model):
+    ASSESSMENT_STATUS_CHOICES = (
+    ("ACTIVE", "Active"),
+    ("ARCHIVED", "Archived"),
+    )
+
     aid = models.AutoField(primary_key=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
     questions = models.ManyToManyField("Question",blank=True)
@@ -56,6 +61,8 @@ class Assessment(models.Model):
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_approver') # if the user is deleted it will set this field to NULL
     last_updated = models.DateTimeField(default=datetime.now, blank = True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
+    assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_assignedto')
+    status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
 
     def __str__(self):
         return str(self.aid)
@@ -95,8 +102,12 @@ class Excel(models.Model):
 # for the users we can also use the Django's inbuilt user management system
 # we will use the inbuilt one
 class User(AbstractUser):
+    ROLE_CHOICES = (
+    ('MEMBER','Member'),
+    ('ADMIN','Admin')
+    )
     email = models.EmailField(max_length = 200)
-    access_role = models.CharField(max_length = 100)
+    access_role = models.CharField(max_length=20, choices = ROLE_CHOICES, default = "Member")
 
     def __str__(self):
         return self.first_name
@@ -151,3 +162,7 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.content
+
+class Snippet(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=100, blank=True, default='')

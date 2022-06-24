@@ -8,7 +8,7 @@ from .serializers import *
 from .models import *
 from rest_framework.authtoken.models import Token
 from django.core.exceptions import PermissionDenied
-
+from rest_framework.pagination import PageNumberPagination
 
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 # Create your views here.
@@ -24,36 +24,91 @@ def authenticate_token(self, request):
 def HasAdminAccess(user):
     return user['role'] == 'Admin'
 
+class AssessmentSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
 class AssessmentViewSet(viewsets.ModelViewSet):
     queryset = Assessment.objects.all().order_by('-last_updated')
     serializer_class = AssessmentSerializer
     permission_classes = (IsAuthenticated,)
+    pagination_class = AssessmentSetPagination
 
     def list(self, request):
         user = authenticate_token(self, request)
+        print(user["user_id"])
         if HasAdminAccess(user):
-            queryset = Assessment.objects.all().order_by('-last_updated')
-            serializer = AssessmentSerializer(queryset, many=True)
+            queryset_filter = Assessment.objects.filter(creator=user["user_id"]) | Assessment.objects.filter(assigned_to=user["user_id"])
+            queryset_order = queryset_filter.order_by('-last_updated')
+            serializer = AssessmentSerializer(queryset_order, many=True)
             return Response(serializer.data)
         else:
             raise PermissionDenied()
 
+    def create(self, request):
+        user = authenticate_token(self, request)
+        if HasAdminAccess(user):
+            serializer = AssessmentSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"status" : "Successful entry!", "data": serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-"""
-class AssessmentViews(APIView):
+
+class Logout(APIView):
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['post']
     def post(self, request):
-        serializer = AssessmentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"status" : "Successful entry!", "data": serializer.data}, status=status.HTTP_200_OK)
-        else:
-            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-"""
+        return self.logout(request)
+
+    def logout(self, request):
+        try:
+            request.user.auth_token.delete()
+        except (AttributeError, ObjectDoesNotExist):
+            pass
+        return Response({"success": "Successfully logged out."},
+                        status=status.HTTP_200_OK)
+
+class QuestionSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all().order_by('-last_edited')
     serializer_class = QuestionSerializer
+    pagination_class = AssessmentSetPagination
     permission_classes = (IsAuthenticated,)
+
+    def list(self, request):
+        queryset = Question.objects.all()
+
+        if "assessmentid" in request.headers:
+            assessment_query = Assessment.objects.filter(aid=request.headers["assessmentid"])
+            #print(assessment_query)
+            question_ids = [a.questions for a in assessment_query]
+            queryset = Question.objects.filter(qid in question_ids)
+
+        if "cwf" in request.headers:
+            queryset = Question.objects.filter(request.headers["cwf"] in cwf)
+
+        if "kt" in request.headers:
+            queryset = Question.objects.filter(request.headers["kt"] in kt)
+
+        if "created_by" in request.headers:
+            queryset = Question.objects.filter(creator = request.headers["created_by"])
+
+        if "role" in request.headers:
+            queryset = Question.objects.filter(request.headers["role"] in role)
+
+        if "starttime" in request.headers and "endtime" in request.headers:
+            queryset = Question.objects.filter(created__range=[starttime,endtime])
+
+        queryset_order= queryset.order_by('-last_edited')
+        serializer = AssessmentSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 class ExhibitViewSet(viewsets.ModelViewSet):
     queryset = Exhibit.objects.all().order_by('-created_on')
@@ -105,3 +160,11 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)
     http_method_names = ['get','put','patch']
+
+class SnippetViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+    """
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
