@@ -5,12 +5,12 @@ from .models import *
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
-        fields = ['problem_statement','questions','role','remarks','creator','approved_by']
+        fields = ['problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by']
+        fields = ['cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status']
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -52,3 +52,18 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['author','content','question','mentioned']
+
+class UserSerializer(serializers.ModelSerializer):
+    #full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["first_name","last_name", "id","email","access_role","username"]
+
+    # def get_full_name(self, obj):
+    #     return '{} {}'.format(obj.first_name, obj.last_name)
+
+class SnippetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Snippet
+        fields = '__all__'
