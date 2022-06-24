@@ -83,25 +83,22 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = Question.objects.all()
         print(queryset)
         if "assessmentid" in request.headers:
-            assessment_query = Assessment.objects.filter(aid=request.headers["assessmentid"])
-            #print(assessment_query)
-            question_ids = [a.qlist for a in assessment_query]
-            queryset = queryset.objects.filter(qid in question_ids)
+            queryset = queryset.filter(assessments__aid= request.headers["assessmentid"]).distinct()
 
         if "cwf" in request.headers:
-            queryset = queryset.objects.filter(request.headers["cwf"] in cwf)
+            queryset = queryset.filter(cwf=request.headers["cwf"])
 
         if "kt" in request.headers:
-            queryset = queryset.objects.filter(request.headers["kt"] in kt)
+            queryset = queryset.filter(kt=request.headers["kt"])
 
         if "created_by" in request.headers:
-            queryset = queryset.objects.filter(creator = request.headers["created_by"])
+            queryset = queryset.filter(creator = request.headers["created_by"])
 
         if "role" in request.headers:
-            queryset = queryset.objects.filter(request.headers["role"] in role)
+            queryset = queryset.filter(role=request.headers["role"])
 
         if "starttime" in request.headers and "endtime" in request.headers:
-            queryset = queryset.objects.filter(created__range=[starttime,endtime])
+            queryset = queryset.filter(created__range=[starttime,endtime])
 
         queryset_order = queryset.order_by('-last_edited')
         serializer = QuestionSerializer(queryset, many=True)

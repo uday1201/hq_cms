@@ -43,7 +43,7 @@ class Question(models.Model):
     status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
 
     def __str__(self):
-        return str(self.qtype_id)
+        return str(self.qid)
 
 class Assessment(models.Model):
     ASSESSMENT_STATUS_CHOICES = (
@@ -53,7 +53,7 @@ class Assessment(models.Model):
 
     aid = models.AutoField(primary_key=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
-    qlist = models.ManyToManyField("Question",blank=True)
+    qlist = models.ManyToManyField("Question",blank=True, related_name='assessments')
     role = models.ManyToManyField("Role",blank=True)
     remarks = models.CharField(max_length=1000, blank = True)
     # timestamp and tracking
