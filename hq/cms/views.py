@@ -40,11 +40,16 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     queryset = Assessment.objects.all().order_by('-last_updated')
     serializer_class = AssessmentSerializer
     pagination_class = AssessmentSetPagination
+    permission_classes = [IsAuthenticated]
 
     def list(self, request):
         user = authenticate_token(self, request)
         #print(user["user_id"])
-        queryset = Assessment.objects.filter(creator=user["user_id"]) | Assessment.objects.filter(assigned_to=user["user_id"])
+        # Admin can view everything
+        if user["role"] == "MEMBER":
+            queryset = Assessment.objects.filter(creator=user["user_id"]) | Assessment.objects.filter(assigned_to=user["user_id"])
+        else:
+            queryset = Assessment.objects.all()
 
         print(request.GET)
         if "status" in request.GET:
@@ -57,25 +62,12 @@ class AssessmentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(role=request.GET["role"]).distinct()
 
         if "starttime" in request.GET and "endtime" in request.GET:
-            queryset = queryset.filter(created__range=[starttime,endtime]).distinct()
+            queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
 
         queryset_order = queryset.order_by('-last_updated')
         serializer = AssessmentSerializer(queryset_order, many=True)
         page = self.paginate_queryset(serializer.data)
-        return self.get_paginated_response(page)
-
-    def get_permissions(self):
-        """
-        Custom permissions, allow members to read only
-        """
-        access_token = self.request.headers['Authorization'].split(" ")[-1]
-        user=Token.objects.get(key=access_token).user
-        #print(user.access_role)
-        if user.access_role == 'ADMIN':
-            permission_classes = [IsAuthenticated]
-        else:
-            permission_classes = [ReadOnly]
-        return [permission() for permission in permission_classes]
+        return Response(page)
 
 
 class Logout(APIView):
@@ -87,7 +79,7 @@ class Logout(APIView):
     def logout(self, request):
         try:
             request.user.auth_token.delete()
-        except (AttributeError, ObjectDoesNotExist):
+        except (AttributeError):
             pass
         return Response({"success": "Successfully logged out."},
                         status=status.HTTP_200_OK)
@@ -122,12 +114,12 @@ class QuestionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(role=request.GET["role"]).distinct()
 
         if "starttime" in request.GET and "endtime" in request.GET:
-            queryset = queryset.filter(created__range=[starttime,endtime]).distinct()
+            queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
 
         queryset_order = queryset.order_by('-last_edited')
         serializer = QuestionSerializer(queryset, many=True)
         page = self.paginate_queryset(serializer.data)
-        return self.get_paginated_response(page)
+        return Response(page)
 
 class ExhibitViewSet(viewsets.ModelViewSet):
     queryset = Exhibit.objects.all().order_by('-created_on')
