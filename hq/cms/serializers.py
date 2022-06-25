@@ -60,6 +60,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["first_name","last_name", "id","email","access_role","username"]
 
+
+
     # def get_full_name(self, obj):
     #     return '{} {}'.format(obj.first_name, obj.last_name)
 

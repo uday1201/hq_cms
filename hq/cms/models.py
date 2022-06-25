@@ -71,6 +71,7 @@ class Role(models.Model):
     role_id = models.AutoField(primary_key=True)
     role_code = models.CharField(max_length = 20, blank = False, null = False, unique=True)
     role_name = models.CharField(max_length = 100, blank = False)
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='role_creator')
 
     def __str__(self):
         return self.role_name
@@ -112,13 +113,14 @@ class User(AbstractUser):
     access_role = models.CharField(max_length=20, choices = ROLE_CHOICES, default = "Member")
 
     def __str__(self):
-        return self.first_name
+        return str(self.id)
 
 class Cwf(models.Model):
     cwf_id = models.AutoField(primary_key=True)
     code = models.CharField(max_length = 100, unique=True, blank = False, null = False)
     name = models.CharField(max_length = 255, blank = False, null = False)
-    role = models.ManyToManyField("Role")
+    role = models.ManyToManyField("Role", related_name="cwf_role")
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='cwf_creator')
     #assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assigned_to')
 
     def __str__(self):
@@ -131,6 +133,7 @@ class Kt(models.Model):
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
     cwf = models.ManyToManyField("Cwf")
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='kt_creator')
 
     def __str__(self):
         return self.name
@@ -141,6 +144,7 @@ class Stage(models.Model):
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
     order = models.IntegerField(default=0)
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='stage_creator')
 
     def __str__(self):
         return self.name
