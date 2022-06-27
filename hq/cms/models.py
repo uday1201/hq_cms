@@ -113,7 +113,7 @@ class User(AbstractUser):
     access_role = models.CharField(max_length=20, choices = ROLE_CHOICES, default = "Member")
 
     def __str__(self):
-        return str(self.id)
+        return self.username
 
 class Cwf(models.Model):
     cwf_id = models.AutoField(primary_key=True)

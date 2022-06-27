@@ -10,7 +10,19 @@ from rest_framework.authtoken.models import Token
 from django.core.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission, SAFE_METHODS, AllowAny
+from rest_framework.authtoken.views import ObtainAuthToken
+from django.views.decorators.csrf import csrf_exempt
+
+
+# token authentication custom oveeride
+class CustomObtainAuthToken(ObtainAuthToken):
+    permission_classes = [AllowAny]
+    def post(self, request, *args, **kwargs):
+        response = super(CustomObtainAuthToken, self).post(request, *args, **kwargs)
+        token = Token.objects.get(key=response.data['token'])
+        user = token.user
+        return Response({'token': token.key, 'id': user.id, 'role': user.access_role, "name": user.first_name + ' ' + user.last_name})
 
 # Create your views here.
 
@@ -213,8 +225,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-first_name')
     serializer_class = UserSerializer
-    http_method_names = ['get']
-
+    permission_classes = (AllowAny)
     # def get_permissions(self):
     #     """
     #     Custom permissions, allow members to read only

@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
+from django.contrib.auth.password_validation import validate_password
 
 from .models import *
 
@@ -55,12 +57,25 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     #full_name = serializers.SerializerMethodField()
-
+    email = serializers.EmailField(required=True,validators=[UniqueValidator(queryset=User.objects.all())])
+    password = serializers.CharField(write_only=True, required=True,validators=[validate_password])
     class Meta:
         model = User
-        fields = ["first_name","last_name", "id","email","access_role","username"]
+        fields = ["first_name","last_name", "id","email","access_role","username", "password"]
+        extra_kwargs = {
+            'username': {'required': True}
+        }
 
-
+    def create(self, validated_data):
+        user = User.objects.create(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
 
     # def get_full_name(self, obj):
     #     return '{} {}'.format(obj.first_name, obj.last_name)
