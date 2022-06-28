@@ -151,7 +151,7 @@ class ExhibitViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.all().order_by('-role_id')
+    queryset = Role.objects.all().order_by('-role_code')
     serializer_class = RoleSerializer
 
     def get_permissions(self):
@@ -173,7 +173,7 @@ class ExcelViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
 class CwfViewSet(viewsets.ModelViewSet):
-    queryset = Cwf.objects.all().order_by('-cwf_id')
+    queryset = Cwf.objects.all().order_by('-code')
     serializer_class = CwfSerializer
 
     def get_permissions(self):
@@ -190,7 +190,7 @@ class CwfViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 class KtViewSet(viewsets.ModelViewSet):
-    queryset = Kt.objects.all().order_by('-kt_id')
+    queryset = Kt.objects.all().order_by('-code')
     serializer_class = KtSerializer
 
     def get_permissions(self):
@@ -207,7 +207,7 @@ class KtViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 class StageViewSet(viewsets.ModelViewSet):
-    queryset = Stage.objects.all().order_by('-stage_id')
+    queryset = Stage.objects.all().order_by('-code')
     serializer_class = StageSerializer
 
     def get_permissions(self):
@@ -235,7 +235,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-first_name')
     serializer_class = UserSerializer
-    permission_classes = (AllowAny)
+    permission_classes = (AllowAny,)
     # def get_permissions(self):
     #     """
     #     Custom permissions, allow members to read only
@@ -255,33 +255,38 @@ class CwfKtStage(APIView):
 
     def get(self, request, format=None):
         response =[]
-        roleid = request.GET["roleid"][0]
-        label = Role.objects.filter(role_id=roleid).values('role_name')[0]['role_name']
-        cwfs = Cwf.objects.filter(role__role_id=roleid).distinct()
-        cwf_main ={}
-        for cwf in cwfs:
-            cwf_obj = {}
-            cwflabel = cwf.name
-            cwfcode = cwf.code
-            kts = Kt.objects.filter(cwf__cwf_id = cwf.cwf_id).distinct()
-            #print(kts)
-            kt_array =[]
-            for kt in kts:
-                if kt.name is not None:
-                    ktname = kt.name
-                    ktcode = kt.code
-                    kt_array.append({"label":ktname, "value":ktcode})
-            cwf_obj["keyTasks"] = kt_array
-            cwf_obj["label"] = cwflabel
-            cwf_main[cwfcode] = cwf_obj
-        stages = Stage.objects.filter(role__role_id=roleid).distinct()
-        stage_array =[]
-        for stage in stages:
-            #print(stage.code)
-            if stage.name is not None:
-                stage_array.append({stage.code:stage.name})
-        response.append({roleid:{"label":label,"wf":cwf_main, "stages":stage_array}})
-        print(response[0])
+        #roleid = request.GET["role_code"]
+        if "role_code" in request.GET:
+            roleid = [request.GET["role_code"]]
+        else:
+            roleid = Role.objects.all().values_list('role_code', flat=True)
+        print(roleid)
+        for role in roleid:
+            label = Role.objects.filter(role_code=role).values('role_name')
+            cwfs = Cwf.objects.filter(role__role_code=role).distinct()
+            cwf_main ={}
+            for cwf in cwfs:
+                cwf_obj = {}
+                cwflabel = cwf.name
+                cwfcode = cwf.code
+                kts = Kt.objects.filter(cwf__code = cwf.code).distinct()
+                #print(kts)
+                kt_array =[]
+                for kt in kts:
+                    if kt.name is not None:
+                        ktname = kt.name
+                        ktcode = kt.code
+                        kt_array.append({"label":ktname, "value":ktcode})
+                cwf_obj["keyTasks"] = kt_array
+                cwf_obj["label"] = cwflabel
+                cwf_main[cwfcode] = cwf_obj
+            stages = Stage.objects.filter(role__role_code=role).distinct()
+            stage_array =[]
+            for stage in stages:
+                #print(stage.code)
+                if stage.name is not None:
+                    stage_array.append({stage.code:stage.name})
+            response.append({role:{"label":label,"wf":cwf_main, "stages":stage_array}})
         return Response(response)
 
 

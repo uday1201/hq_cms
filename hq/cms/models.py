@@ -68,8 +68,8 @@ class Assessment(models.Model):
         return str(self.aid)
 
 class Role(models.Model):
-    role_id = models.AutoField(primary_key=True)
-    role_code = models.CharField(max_length = 20, blank = False, null = False, unique=True)
+    #role_id = models.AutoField(primary_key=True)
+    role_code = models.CharField(max_length = 20, primary_key=True)
     role_name = models.CharField(max_length = 100, blank = False)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='role_creator')
 
@@ -116,8 +116,8 @@ class User(AbstractUser):
         return self.username
 
 class Cwf(models.Model):
-    cwf_id = models.AutoField(primary_key=True)
-    code = models.CharField(max_length = 100, unique=True, blank = False, null = False)
+    #cwf_id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role", related_name="cwf_role")
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='cwf_creator')
@@ -128,8 +128,8 @@ class Cwf(models.Model):
 
 
 class Kt(models.Model):
-    kt_id = models.AutoField(primary_key=True)
-    code = models.CharField(max_length = 100, unique=True, blank = False, null = False)
+    #kt_id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
     cwf = models.ManyToManyField("Cwf")
@@ -139,8 +139,8 @@ class Kt(models.Model):
         return self.name
 
 class Stage(models.Model):
-    stage_id = models.AutoField(primary_key=True)
-    code = models.CharField(max_length = 100, unique=True, blank = False, null = False)
+    #stage_id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
     order = models.IntegerField(default=0)

@@ -36,14 +36,14 @@ class QuestionSerializer(serializers.ModelSerializer):
         question.kt.set(validated_data["kt"])
         question.role.set(validated_data["role"])
 
-        # setting excels and exhibits from context
-        context_array = validated_data["context"]
-        if context_array is not None:
+        # setting excels and exhibits from context {"context" : list(context)} --> [{"type" : <>, "value" : ,"id" :}]
+        if validated_data["context"] is not None:
+            context_array = validated_data["context"]["context"]
             for context in context_array:
                 if context["type"] == "exhibit":
-                    question.exhibits.set(context["value"])
+                    question.exhibits.add(context["id"])
                 if context["type"] == "excel":
-                    question.excels.set(context["value"])
+                    question.excels.add(context["id"])
 
         # saving the question object
         obj = question.save()
@@ -109,7 +109,8 @@ class UserSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data['email'],
             first_name=validated_data['first_name'],
-            last_name=validated_data['last_name']
+            last_name=validated_data['last_name'],
+            access_role=validated_data['access_role']
         )
         user.set_password(validated_data['password'])
         user.save()
