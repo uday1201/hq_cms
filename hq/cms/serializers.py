@@ -11,7 +11,8 @@ class AssessmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'name','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
 
 class QuestionSerializer(serializers.ModelSerializer):
-    assessmentid = serializers.CharField(write_only=True)
+    # assessmentid = serializers.CharField(write_only=True)
+    assessmentid = serializers.ListField(write_only=True)
     class Meta:
         model = Question
         fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid']
@@ -25,11 +26,11 @@ class QuestionSerializer(serializers.ModelSerializer):
         options = validated_data["options"],
         score_type = validated_data["score_type"],
         score_weight = validated_data["score_weight"],
-        resources = validated_data["resources"],
-        creator = validated_data["creator"],
-        approved_by = validated_data["approved_by"],
-        last_edited_by = validated_data["last_edited_by"],
-        status = validated_data["status"],
+        # resources = validated_data["resources"],
+        # creator = validated_data["creator"],
+        # approved_by = validated_data["approved_by"],
+        # last_edited_by = validated_data["last_edited_by"],
+        # status = validated_data["status"],
         )
 
         # setting the manytomany fields
@@ -39,7 +40,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
         # setting excels and exhibits from context {"context" : list(context)} --> [{"type" : <>, "value" : ,"id" :}]
         if validated_data["context"] is not None:
-            context_array = validated_data["context"]["context"]
+            context_array = validated_data["context"]["contextList"]
             for context in context_array:
                 if context["type"] == "exhibit":
                     question.exhibits.add(context["id"])
@@ -51,7 +52,8 @@ class QuestionSerializer(serializers.ModelSerializer):
 
         # adding the question to assessment
         assessment_id = validated_data["assessmentid"]
-        Assessment.objects.get(aid=assessment_id).qlist.add(question.qid)
+        for aid in assessment_id:
+            Assessment.objects.get(id=aid).qlist.add(question.id)
         return question
 
 class RoleSerializer(serializers.ModelSerializer):

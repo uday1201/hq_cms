@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from requests import request
 
 from rest_framework import viewsets
 from rest_framework.views import APIView
@@ -107,11 +108,19 @@ class QuestionViewSet(viewsets.ModelViewSet):
     pagination_class = AssessmentSetPagination
     permission_classes = (IsAuthenticated,)
 
+    def post(self, request):
+        print("question")
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            return Response()
+        
+        print(serializer.errors)
+
     def list(self, request):
         queryset = Question.objects.all()
         #print(request.GET["assessmentid"])
         if "assessmentid" in request.GET:
-            queryset = queryset.filter(assessments__aid= request.GET["assessmentid"]).distinct()
+            queryset = queryset.filter(assessments__id= request.GET["assessmentid"]).distinct()
 
         if "cwf" in request.GET:
             queryset = queryset.filter(cwf=request.GET["cwf"]).distinct()
@@ -254,39 +263,39 @@ class CwfKtStage(APIView):
     http_method_names = ['get']
 
     def get(self, request, format=None):
-        response =[]
+        response = {}
         #roleid = request.GET["role_code"]
         if "role_code" in request.GET:
             roleid = [request.GET["role_code"]]
         else:
-            roleid = Role.objects.all().values_list('role_code', flat=True)
+            roleid = Role.objects.all().values_list('id', flat=True)
         print(roleid)
         for role in roleid:
-            label = Role.objects.filter(role_code=role).values('role_name')
-            cwfs = Cwf.objects.filter(role__role_code=role).distinct()
+            label = Role.objects.filter(id=role).values('name')
+            cwfs = Cwf.objects.filter(role__id=role).distinct()
             cwf_main ={}
             for cwf in cwfs:
                 cwf_obj = {}
                 cwflabel = cwf.name
-                cwfcode = cwf.code
-                kts = Kt.objects.filter(cwf__code = cwf.code).distinct()
+                cwfcode = cwf.id
+                kts = Kt.objects.filter(cwf__id = cwf.id).distinct()
                 #print(kts)
                 kt_array =[]
                 for kt in kts:
                     if kt.name is not None:
                         ktname = kt.name
-                        ktcode = kt.code
+                        ktcode = kt.id
                         kt_array.append({"label":ktname, "value":ktcode})
                 cwf_obj["keyTasks"] = kt_array
                 cwf_obj["label"] = cwflabel
                 cwf_main[cwfcode] = cwf_obj
-            stages = Stage.objects.filter(role__role_code=role).distinct()
+            stages = Stage.objects.filter(role__id=role).distinct()
             stage_array =[]
             for stage in stages:
                 #print(stage.code)
                 if stage.name is not None:
-                    stage_array.append({stage.code:stage.name})
-            response.append({role:{"label":label,"wf":cwf_main, "stages":stage_array}})
+                    stage_array.append({stage.id:stage.name})
+            response[role]={"label":label[0]["name"],"wf":cwf_main, "stages":stage_array}
         return Response(response)
 
 
