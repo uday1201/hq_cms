@@ -1,19 +1,21 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
+from drf_extra_fields.fields import Base64ImageField
 
 from .models import *
 
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
-        fields = ['aid','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
+        fields = ['id', 'name','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
 
 class QuestionSerializer(serializers.ModelSerializer):
-    assessmentid = serializers.CharField(write_only=True)
+    # assessmentid = serializers.CharField(write_only=True)
+    assessmentid = serializers.ListField(write_only=True)
     class Meta:
         model = Question
-        fields = ['qid','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','assessmentid']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid']
 
     def create(self, validated_data):
         question = Question.objects.create(
@@ -24,11 +26,11 @@ class QuestionSerializer(serializers.ModelSerializer):
         options = validated_data["options"],
         score_type = validated_data["score_type"],
         score_weight = validated_data["score_weight"],
-        resources = validated_data["resources"],
-        creator = validated_data["creator"],
-        approved_by = validated_data["approved_by"],
-        last_edited_by = validated_data["last_edited_by"],
-        status = validated_data["status"],
+        # resources = validated_data["resources"],
+        # creator = validated_data["creator"],
+        # approved_by = validated_data["approved_by"],
+        # last_edited_by = validated_data["last_edited_by"],
+        # status = validated_data["status"],
         )
 
         # setting the manytomany fields
@@ -38,7 +40,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
         # setting excels and exhibits from context {"context" : list(context)} --> [{"type" : <>, "value" : ,"id" :}]
         if validated_data["context"] is not None:
-            context_array = validated_data["context"]["context"]
+            context_array = validated_data["context"]["contextList"]
             for context in context_array:
                 if context["type"] == "exhibit":
                     question.exhibits.add(context["id"])
@@ -50,7 +52,8 @@ class QuestionSerializer(serializers.ModelSerializer):
 
         # adding the question to assessment
         assessment_id = validated_data["assessmentid"]
-        Assessment.objects.get(aid=assessment_id).qlist.add(question.qid)
+        for aid in assessment_id:
+            Assessment.objects.get(id=aid).qlist.add(question.id)
         return question
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -64,9 +67,14 @@ class ExhibitSerializer(serializers.ModelSerializer):
         fields = ['image','alt_text','type']
 
 class ExcelSerializer(serializers.ModelSerializer):
+    image=Base64ImageField()
     class Meta:
-        model = Excel
-        fields = ['file','alt_text']
+        model = Exhibit
+        fields = ['id','image','alt_text','type']
+    def create(self, validated_data):
+        image=validated_data.pop('image')
+        alt_text=validated_data.pop('alt_text')
+        return Exhibit.objects.create(image=image,alt_text=alt_text)
 
 class CwfSerializer(serializers.ModelSerializer):
     class Meta:
