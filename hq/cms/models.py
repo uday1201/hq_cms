@@ -11,7 +11,13 @@ class Question(models.Model):
     ("REVIEWED", "Reviewed"),
     ("ARCHIVED", "Archived"),
     )
-    qid = models.AutoField(primary_key=True)
+    
+    DIFFICULTY_CHOICES = (
+    ("EASY", "EASY"),
+    ("MEDIUM", "MEDIUM"),
+    ("HARD", "HARD"),
+    )
+    id = models.AutoField(primary_key=True)
     # details of the question
     cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
     kt = models.ManyToManyField("Kt",blank=True)
@@ -37,13 +43,13 @@ class Question(models.Model):
     created = models.DateTimeField(auto_now_add=True, blank=True)
     # miscellaneous fields
     idealtime = models.FloatField(blank=True, null=True)
-    difficulty_level = models.CharField(max_length=50, blank=True, null=True)
+    difficulty_level = models.CharField(max_length=50, choices=DIFFICULTY_CHOICES, blank=True, null=True, default="MEDIUM")
     misc = models.JSONField(blank=True, null=True)
     # status of the question
     status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
 
     def __str__(self):
-        return self.qid
+        return self.id
 
 class Assessment(models.Model):
     ASSESSMENT_STATUS_CHOICES = (
@@ -51,10 +57,12 @@ class Assessment(models.Model):
     ("ARCHIVED", "Archived"),
     )
 
-    aid = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
+    name = models.CharField(max_length=100, blank = True)
     qlist = models.ManyToManyField("Question",blank=True, related_name='assessments')
-    role = models.ManyToManyField("Role",blank=True)
+    # role = models.ManyToManyField("Role",blank=True)
+    role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='assessment_role') # if the creator user is deleted it will set this field to NULL
     remarks = models.CharField(max_length=1000, blank = True)
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_creator') # if the creator user is deleted it will set this field to NULL
@@ -65,25 +73,25 @@ class Assessment(models.Model):
     status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
 
     def __str__(self):
-        return str(self.aid)
+        return str(self.id)
 
 class Role(models.Model):
     #role_id = models.AutoField(primary_key=True)
-    role_code = models.CharField(max_length = 20, primary_key=True)
-    role_name = models.CharField(max_length = 100, blank = False)
+    id = models.CharField(max_length = 20, primary_key=True)
+    name = models.CharField(max_length = 100, blank = False)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='role_creator')
 
     def __str__(self):
-        return self.role_name
+        return self.name
 
 class Exhibit(models.Model):
-    exhibit_id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     # we have 2 choices here, if we want to store the assests externally on the cloud we need to have a URL field, otherwise we can also use Django media manager with imagefield
     #url = models.URLField(max_length = 250)
     #file = models.FileField(upload_to = 'exhibits/')
     image = models.ImageField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
-    type = models.CharField(max_length = 100, blank = True)
+    type = models.CharField(max_length = 100, blank = True, default="exhibit")
     created_on = models.DateTimeField(default=datetime.now, blank = True)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='exhibit_creator')
 
@@ -91,7 +99,7 @@ class Exhibit(models.Model):
         return self.alt_text
 
 class Excel(models.Model):
-    excel_id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     #url = models.URLField(max_length = 250)
     file = models.FileField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
@@ -117,7 +125,7 @@ class User(AbstractUser):
 
 class Cwf(models.Model):
     #cwf_id = models.AutoField(primary_key=True)
-    code = models.CharField(max_length = 100, primary_key=True)
+    id = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role", related_name="cwf_role")
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='cwf_creator')
@@ -129,7 +137,7 @@ class Cwf(models.Model):
 
 class Kt(models.Model):
     #kt_id = models.AutoField(primary_key=True)
-    code = models.CharField(max_length = 100, primary_key=True)
+    id = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
     cwf = models.ManyToManyField("Cwf")
@@ -140,7 +148,7 @@ class Kt(models.Model):
 
 class Stage(models.Model):
     #stage_id = models.AutoField(primary_key=True)
-    code = models.CharField(max_length = 100, primary_key=True)
+    id = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
     order = models.IntegerField(default=0)
@@ -158,7 +166,7 @@ class Qtype(models.Model):
         return self.name
 
 class Comment(models.Model):
-    comment_id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     author = models.ForeignKey("User", on_delete = models.CASCADE, related_name="commentor")
     question = models.ForeignKey("Question", on_delete = models.CASCADE, related_name="commentor")
     content = models.TextField(max_length=500)
