@@ -7,13 +7,51 @@ from .models import *
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
-        fields = ['problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
+        fields = ['aid','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
 
 class QuestionSerializer(serializers.ModelSerializer):
+    assessmentid = serializers.CharField(write_only=True)
     class Meta:
         model = Question
-        fields = ['cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status']
+        fields = ['qid','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','assessmentid']
 
+    def create(self, validated_data):
+        question = Question.objects.create(
+        stage = validated_data["stage"],
+        context = validated_data["context"],
+        text = validated_data["text"],
+        qtype = validated_data["qtype"],
+        options = validated_data["options"],
+        score_type = validated_data["score_type"],
+        score_weight = validated_data["score_weight"],
+        resources = validated_data["resources"],
+        creator = validated_data["creator"],
+        approved_by = validated_data["approved_by"],
+        last_edited_by = validated_data["last_edited_by"],
+        status = validated_data["status"],
+        )
+
+        # setting the manytomany fields
+        question.cwf.set(validated_data["cwf"])
+        question.kt.set(validated_data["kt"])
+        question.role.set(validated_data["role"])
+
+        # setting excels and exhibits from context
+        context_array = validated_data["context"]
+        if context_array is not None:
+            for context in context_array:
+                if context["type"] == "exhibit":
+                    question.exhibits.set(context["value"])
+                if context["type"] == "excel":
+                    question.excels.set(context["value"])
+
+        # saving the question object
+        obj = question.save()
+
+        # adding the question to assessment
+        assessment_id = validated_data["assessmentid"]
+        Assessment.objects.get(aid=assessment_id).qlist.add(question.qid)
+        return question
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:

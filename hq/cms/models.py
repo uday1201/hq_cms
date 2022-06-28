@@ -43,7 +43,7 @@ class Question(models.Model):
     status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
 
     def __str__(self):
-        return str(self.qid)
+        return self.qid
 
 class Assessment(models.Model):
     ASSESSMENT_STATUS_CHOICES = (

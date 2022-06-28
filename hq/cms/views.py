@@ -133,6 +133,18 @@ class QuestionViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(serializer.data)
         return Response(page)
 
+    # def create(self, request):
+    #     content = request.data
+    #     # get assessment id from the question response
+    #     if "assessmentid" in content:
+    #         assessment_id = content["assessmentid"]
+    #         # delete it from the content field
+    #         assessment = Assessment.objects.filter(aid = assessment_id)
+    #         for a in assessment:
+    #             print(a.qlist)
+    #         del content["assessmentid"]
+    #     print(content)
+
 class ExhibitViewSet(viewsets.ModelViewSet):
     queryset = Exhibit.objects.all().order_by('-created_on')
     serializer_class = ExhibitSerializer
@@ -181,7 +193,6 @@ class KtViewSet(viewsets.ModelViewSet):
     queryset = Kt.objects.all().order_by('-kt_id')
     serializer_class = KtSerializer
 
-
     def get_permissions(self):
         """
         Custom permissions, allow members to read only
@@ -198,7 +209,6 @@ class KtViewSet(viewsets.ModelViewSet):
 class StageViewSet(viewsets.ModelViewSet):
     queryset = Stage.objects.all().order_by('-stage_id')
     serializer_class = StageSerializer
-
 
     def get_permissions(self):
         """
@@ -248,8 +258,9 @@ class CwfKtStage(APIView):
         roleid = request.GET["roleid"][0]
         label = Role.objects.filter(role_id=roleid).values('role_name')[0]['role_name']
         cwfs = Cwf.objects.filter(role__role_id=roleid).distinct()
-        cwf_array =[]
+        cwf_main ={}
         for cwf in cwfs:
+            cwf_obj = {}
             cwflabel = cwf.name
             cwfcode = cwf.code
             kts = Kt.objects.filter(cwf__cwf_id = cwf.cwf_id).distinct()
@@ -259,15 +270,18 @@ class CwfKtStage(APIView):
                 if kt.name is not None:
                     ktname = kt.name
                     ktcode = kt.code
-                    kt_array.append({"Key Task Code":ktcode, "Key Task Name":ktname})
-            cwf_array.append({cwflabel:kt_array})
+                    kt_array.append({"label":ktname, "value":ktcode})
+            cwf_obj["keyTasks"] = kt_array
+            cwf_obj["label"] = cwflabel
+            cwf_main[cwfcode] = cwf_obj
         stages = Stage.objects.filter(role__role_id=roleid).distinct()
         stage_array =[]
         for stage in stages:
-            print(stage.code)
+            #print(stage.code)
             if stage.name is not None:
                 stage_array.append({stage.code:stage.name})
-        response.append({"Role id":roleid,"CWF":cwf_array, "Stages":stage_array})
+        response.append({roleid:{"label":label,"wf":cwf_main, "stages":stage_array}})
+        print(response[0])
         return Response(response)
 
 
