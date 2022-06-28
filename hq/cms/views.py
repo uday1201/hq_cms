@@ -32,10 +32,10 @@ class ReadOnly(BasePermission):
 
 # authentication rule
 def authenticate_token(self, request):
-    access_token = request.headers['Authorization'].split(" ")[-1]
-    #print(access_token)
+    access_token = request.COOKIES.get('auth_token')
+    print(access_token)
     user=Token.objects.get(key=access_token).user
-    #print('role: ', user.access_role )
+    print('role: ', user.access_role )
     return {"user_id": user.id, "name": user.first_name ,"username": user.username, "role" :user.access_role}
 
 def HasAdminAccess(user):
@@ -158,10 +158,9 @@ class RoleViewSet(viewsets.ModelViewSet):
         """
         Custom permissions, allow members to read only
         """
-        access_token = self.request.headers['Authorization'].split(" ")[-1]
-        user=Token.objects.get(key=access_token).user
-        print(user.access_role)
-        if user.access_role == 'ADMIN':
+        user = authenticate_token(self, self.request)
+        #print(user["role"])
+        if user["role"] == 'ADMIN':
             permission_classes = [IsAuthenticated]
         else:
             permission_classes = [ReadOnly]
@@ -180,11 +179,10 @@ class CwfViewSet(viewsets.ModelViewSet):
         """
         Custom permissions, allow members to read only
         """
-        access_token = self.request.headers['Authorization'].split(" ")[-1]
-        user=Token.objects.get(key=access_token).user
-        print(user.access_role)
-        if user.access_role == 'ADMIN':
-            permission_classes = [IsAuthenticated]
+        user = authenticate_token(self, self.request)
+        #print(user["role"])
+        if user["role"] == 'ADMIN':
+            permission_classes = [AllowAny]
         else:
             permission_classes = [ReadOnly]
         return [permission() for permission in permission_classes]
@@ -197,10 +195,9 @@ class KtViewSet(viewsets.ModelViewSet):
         """
         Custom permissions, allow members to read only
         """
-        access_token = self.request.headers['Authorization'].split(" ")[-1]
-        user=Token.objects.get(key=access_token).user
-        print(user.access_role)
-        if user.access_role == 'ADMIN':
+        user = authenticate_token(self, self.request)
+        #print(user["role"])
+        if user["role"] == 'ADMIN':
             permission_classes = [IsAuthenticated]
         else:
             permission_classes = [ReadOnly]
@@ -214,10 +211,9 @@ class StageViewSet(viewsets.ModelViewSet):
         """
         Custom permissions, allow members to read only
         """
-        access_token = self.request.headers['Authorization'].split(" ")[-1]
-        user=Token.objects.get(key=access_token).user
-        print(user.access_role)
-        if user.access_role == 'ADMIN':
+        user = authenticate_token(self, self.request)
+        #print(user["role"])
+        if user["role"] == 'ADMIN':
             permission_classes = [IsAuthenticated]
         else:
             permission_classes = [ReadOnly]
