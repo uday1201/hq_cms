@@ -1,18 +1,19 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
+from drf_extra_fields.fields import Base64ImageField
 
 from .models import *
 
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
-        fields = ['problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
+        fields = ['id','name','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','difficulty_level','idealtime']
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -21,9 +22,14 @@ class RoleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ExhibitSerializer(serializers.ModelSerializer):
+    image=Base64ImageField()
     class Meta:
         model = Exhibit
-        fields = ['image','alt_text','type']
+        fields = ['id','image','alt_text','type']
+    def create(self, validated_data):
+        image=validated_data.pop('image')
+        alt_text=validated_data.pop('alt_text')
+        return Exhibit.objects.create(image=image,alt_text=alt_text)
 
 class ExcelSerializer(serializers.ModelSerializer):
     class Meta:

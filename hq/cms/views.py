@@ -33,9 +33,9 @@ class ReadOnly(BasePermission):
 # authentication rule
 def authenticate_token(self, request):
     access_token = request.headers['Authorization'].split(" ")[-1]
-    #print(access_token)
+    print("access_token",access_token)
     user=Token.objects.get(key=access_token).user
-    #print('role: ', user.access_role )
+    print('role: ',  user.access_role)
     return {"user_id": user.id, "name": user.first_name ,"username": user.username, "role" :user.access_role}
 
 def HasAdminAccess(user):
@@ -43,7 +43,7 @@ def HasAdminAccess(user):
 
 
 class AssessmentSetPagination(PageNumberPagination):
-    page_size = 1
+    page_size = 100
     page_query_param = 'page'
     page_size_query_param = 'page_size'
     max_page_size = 1000
@@ -52,9 +52,12 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     queryset = Assessment.objects.all().order_by('-last_updated')
     serializer_class = AssessmentSerializer
     pagination_class = AssessmentSetPagination
-    permission_classes = [IsAuthenticated]
+    print("before")
+    permission_classes = []
+    print("after")
 
     def list(self, request):
+        print("request",request)
         user = authenticate_token(self, request)
         #print(user["user_id"])
         # Admin can view everything
@@ -105,7 +108,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
     pagination_class = AssessmentSetPagination
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     def list(self, request):
         queryset = Question.objects.all()
@@ -137,23 +140,25 @@ class ExhibitViewSet(viewsets.ModelViewSet):
     queryset = Exhibit.objects.all().order_by('-created_on')
     serializer_class = ExhibitSerializer
     permission_classes = (IsAuthenticated,)
+    permission_classes = []
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all().order_by('-role_id')
     serializer_class = RoleSerializer
+    permission_classes = []
 
-    def get_permissions(self):
-        """
-        Custom permissions, allow members to read only
-        """
-        access_token = self.request.headers['Authorization'].split(" ")[-1]
-        user=Token.objects.get(key=access_token).user
-        print(user.access_role)
-        if user.access_role == 'ADMIN':
-            permission_classes = [IsAuthenticated]
-        else:
-            permission_classes = [ReadOnly]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     """
+    #     Custom permissions, allow members to read only
+    #     """
+    #     access_token = self.request.headers['Authorization'].split(" ")[-1]
+    #     user=Token.objects.get(key=access_token).user
+    #     print(user.access_role)
+    #     if user.access_role == 'ADMIN':
+    #         permission_classes = [IsAuthenticated]
+    #     else:
+    #         permission_classes = [ReadOnly]
+    #     return [permission() for permission in permission_classes]
 
 class ExcelViewSet(viewsets.ModelViewSet):
     queryset = Excel.objects.all().order_by('-created_on')
@@ -226,6 +231,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-first_name')
     serializer_class = UserSerializer
     permission_classes = (AllowAny)
+    permission_classes = []
     # def get_permissions(self):
     #     """
     #     Custom permissions, allow members to read only
