@@ -92,7 +92,7 @@ class Exhibit(models.Model):
     #file = models.FileField(upload_to = 'exhibits/')
     image = models.ImageField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
-    type = models.CharField(max_length = 100, blank = True)
+    type = models.CharField(max_length = 100, blank = True, default="exhibit")
     created_on = models.DateTimeField(default=datetime.now, blank = True)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='exhibit_creator')
 
