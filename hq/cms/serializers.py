@@ -1,19 +1,20 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
+from drf_extra_fields.fields import Base64ImageField
 
 from .models import *
 
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
-        fields = ['aid','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
+        fields = ['id', 'name','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
 
 class QuestionSerializer(serializers.ModelSerializer):
     assessmentid = serializers.CharField(write_only=True)
     class Meta:
         model = Question
-        fields = ['qid','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','assessmentid']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid']
 
     def create(self, validated_data):
         question = Question.objects.create(
@@ -64,9 +65,14 @@ class ExhibitSerializer(serializers.ModelSerializer):
         fields = ['image','alt_text','type']
 
 class ExcelSerializer(serializers.ModelSerializer):
+    image=Base64ImageField()
     class Meta:
-        model = Excel
-        fields = ['file','alt_text']
+        model = Exhibit
+        fields = ['id','image','alt_text','type']
+    def create(self, validated_data):
+        image=validated_data.pop('image')
+        alt_text=validated_data.pop('alt_text')
+        return Exhibit.objects.create(image=image,alt_text=alt_text)
 
 class CwfSerializer(serializers.ModelSerializer):
     class Meta:

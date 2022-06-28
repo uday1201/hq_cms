@@ -43,7 +43,7 @@ def HasAdminAccess(user):
 
 
 class AssessmentSetPagination(PageNumberPagination):
-    page_size = 1
+    page_size = 20
     page_query_param = 'page'
     page_size_query_param = 'page_size'
     max_page_size = 1000
@@ -151,7 +151,7 @@ class ExhibitViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.all().order_by('-role_code')
+    queryset = Role.objects.all().order_by('-id')
     serializer_class = RoleSerializer
 
     def get_permissions(self):
@@ -173,7 +173,7 @@ class ExcelViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
 class CwfViewSet(viewsets.ModelViewSet):
-    queryset = Cwf.objects.all().order_by('-code')
+    queryset = Cwf.objects.all().order_by('-id')
     serializer_class = CwfSerializer
 
     def get_permissions(self):
@@ -190,7 +190,7 @@ class CwfViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 class KtViewSet(viewsets.ModelViewSet):
-    queryset = Kt.objects.all().order_by('-code')
+    queryset = Kt.objects.all().order_by('-id')
     serializer_class = KtSerializer
 
     def get_permissions(self):
@@ -207,7 +207,7 @@ class KtViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 class StageViewSet(viewsets.ModelViewSet):
-    queryset = Stage.objects.all().order_by('-code')
+    queryset = Stage.objects.all().order_by('-id')
     serializer_class = StageSerializer
 
     def get_permissions(self):
