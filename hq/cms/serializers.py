@@ -39,7 +39,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         score_type = validated_data["score_type"],
         score_weight = validated_data["score_weight"],
         # resources = validated_data["resources"],
-        approved_by = validated_data["approved_by"],
+        # approved_by = validated_data["approved_by"],
         # last_edited_by = validated_data["last_edited_by"],
         status = validated_data["status"],
         )
