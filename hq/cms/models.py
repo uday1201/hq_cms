@@ -108,6 +108,7 @@ class Exhibit(models.Model):
     alt_text = models.CharField(max_length = 100, blank = True)
     type = models.CharField(max_length = 100, blank = True, default="exhibit")
     created_on = models.DateTimeField(default=datetime.now, blank = True)
+    updated_on = models.DateTimeField
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='exhibit_creator')
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
@@ -121,6 +122,7 @@ class Excel(models.Model):
     file = models.FileField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
     created_on = models.DateTimeField(default=datetime.now, blank = True)
+    updated_on = models.DateTimeField
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='excel_creator')
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
