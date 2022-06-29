@@ -77,14 +77,14 @@ class ExhibitSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Exhibit
-        fields = ['image','alt_text','type','isdeleted']
+        fields = ['image','alt_text','type','isdeleted','creator']
 
 class ExcelSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     image=Base64ImageField()
     class Meta:
         model = Exhibit
-        fields = ['id','image','alt_text','type','isdeleted']
+        fields = ['id','image','alt_text','type','isdeleted','creator']
     def create(self, validated_data):
         image=validated_data.pop('image')
         alt_text=validated_data.pop('alt_text')
