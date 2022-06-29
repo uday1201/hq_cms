@@ -48,8 +48,8 @@ class Question(models.Model):
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='question_approver') # if the user is deleted it will set this field to NULL
     last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
-    last_edited = models.DateTimeField(default=datetime.now, blank = True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
+    last_edited = models.DateTimeField(auto_now =True)
+    created = models.DateTimeField(auto_now_add =True)
     # miscellaneous fields
     idealtime = models.FloatField(blank=True, null=True)
     difficulty_level = models.CharField(max_length=50, choices=DIFFICULTY_CHOICES, blank=True, null=True, default="MEDIUM")
@@ -78,8 +78,8 @@ class Assessment(models.Model):
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='assessment_approver') # if the user is deleted it will set this field to NULL
-    last_updated = models.DateTimeField(default=datetime.now, blank = True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
     assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='assessment_assignedto')
     status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
     # deleted field
@@ -107,8 +107,8 @@ class Exhibit(models.Model):
     image = models.ImageField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
     type = models.CharField(max_length = 100, blank = True, default="exhibit")
-    created_on = models.DateTimeField(default=datetime.now, blank = True)
-    updated_on = models.DateTimeField
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='exhibit_creator')
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
@@ -121,8 +121,8 @@ class Excel(models.Model):
     #url = models.URLField(max_length = 250)
     file = models.FileField(upload_to = 'exhibits/', blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
-    created_on = models.DateTimeField(default=datetime.now, blank = True)
-    updated_on = models.DateTimeField
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='excel_creator')
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
