@@ -75,12 +75,6 @@ class RoleSerializer(serializers.ModelSerializer):
 
 class ExhibitSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    class Meta:
-        model = Exhibit
-        fields = ['image','alt_text','type','isdeleted','creator']
-
-class ExcelSerializer(serializers.ModelSerializer):
-    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     image=Base64ImageField()
     class Meta:
         model = Exhibit
@@ -90,6 +84,11 @@ class ExcelSerializer(serializers.ModelSerializer):
         alt_text=validated_data.pop('alt_text')
         return Exhibit.objects.create(image=image,alt_text=alt_text)
 
+class ExcelSerializer(serializers.ModelSerializer):
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = Excel
+        fields = ['id','file','alt_text','isdeleted','creator']
 
 class CwfSerializer(serializers.ModelSerializer):
     #cwf_creator = serializers.StringRelatedField(default=serializers.CurrentUserDefault(), read_only=True)
