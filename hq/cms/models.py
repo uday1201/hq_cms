@@ -47,7 +47,7 @@ class Question(models.Model):
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='question_approver') # if the user is deleted it will set this field to NULL
-    last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
+    last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
     last_edited = models.DateTimeField(default=datetime.now, blank = True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     # miscellaneous fields
@@ -142,7 +142,7 @@ class User(AbstractUser):
     isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
-        return self.username
+        return str(self.id)
 
 class Cwf(models.Model):
     #cwf_id = models.AutoField(primary_key=True)

@@ -13,16 +13,22 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
 class QuestionSerializer(serializers.ModelSerializer):
     # assessmentid = serializers.CharField(write_only=True)
-    assessmentid = serializers.ListField(write_only=True)
+    assessmentid = serializers.ListField(write_only=True,required=False)
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    
     class Meta:
         model = Question
         fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid','isdeleted']
+        extra_kwargs = {'score_type': {'required': False},'score_weight': {'required': False}}
 
-
-    def partial_update(self, request, *args, **kwargs):
-        kwargs['last_edited_by'] = self.context['request'].user
-        return self.update(request, *args, **kwargs)
+    def update(self, instance, validated_data):
+        print("VVV")
+        demo = Question.objects.get(pk=instance.id)
+        validated_data["last_edited_by"] = self.context['request'].user
+        Question.objects.filter(pk=instance.id).update(**validated_data)
+        print(validated_data)
+        return demo
 
     def create(self, validated_data):
         question = Question.objects.create(

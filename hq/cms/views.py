@@ -102,7 +102,7 @@ class QuestionSetPagination(PageNumberPagination):
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.filter(isdeleted=False)
     serializer_class = QuestionSerializer
-    pagination_class = AssessmentSetPagination
+    pagination_class = QuestionSetPagination
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
@@ -179,9 +179,6 @@ class ExcelViewSet(viewsets.ModelViewSet):
 class CwfViewSet(viewsets.ModelViewSet):
     queryset = Cwf.objects.filter(isdeleted=False).order_by('-id')
     serializer_class = CwfSerializer
-
-    def perform_create(self, serializer):
-        serializer.save()
 
     def get_permissions(self):
         """
