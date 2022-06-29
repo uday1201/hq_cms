@@ -26,21 +26,18 @@ class CustomObtainAuthToken(ObtainAuthToken):
         return Response({'token': token.key, 'id': user.id, 'role': user.access_role, "name": user.first_name + ' ' + user.last_name})
 
 # Create your views here.
-
 class ReadOnly(BasePermission):
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS
 
 # authentication rule
 def authenticate_token(self, request):
-    access_token = request.COOKIES.get('auth_token')
+    #access_token = request.COOKIES.get('auth_token')
+    access_token = request.headers['Authorization'].split(" ")[-1]
     print(access_token)
     user=Token.objects.get(key=access_token).user
     print('role: ', user.access_role )
     return {"user_id": user.id, "name": user.first_name ,"username": user.username, "role" :user.access_role}
-
-def HasAdminAccess(user):
-    return user['role'] == 'Admin'
 
 
 class AssessmentSetPagination(PageNumberPagination):
@@ -50,7 +47,7 @@ class AssessmentSetPagination(PageNumberPagination):
     max_page_size = 1000
 
 class AssessmentViewSet(viewsets.ModelViewSet):
-    queryset = Assessment.objects.all().order_by('-last_updated')
+    queryset = Assessment.objects.filter(isdeleted=False).order_by('-last_updated')
     serializer_class = AssessmentSerializer
     pagination_class = AssessmentSetPagination
     permission_classes = [IsAuthenticated]
@@ -62,9 +59,9 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         if user["role"] == "MEMBER":
             queryset = Assessment.objects.filter(creator=user["user_id"]) | Assessment.objects.filter(assigned_to=user["user_id"])
         else:
-            queryset = Assessment.objects.all()
+            queryset = Assessment.objects.filter(isdeleted=False)
 
-        print(request.GET)
+        #print(request.GET)
         if "status" in request.GET:
             queryset = queryset.filter(status=request.GET["status"]).distinct()
 
@@ -103,21 +100,20 @@ class QuestionSetPagination(PageNumberPagination):
     max_page_size = 1000
 
 class QuestionViewSet(viewsets.ModelViewSet):
-    queryset = Question.objects.all()
+    queryset = Question.objects.filter(isdeleted=False)
     serializer_class = QuestionSerializer
     pagination_class = AssessmentSetPagination
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        print("question")
+        # print("question")
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             return Response()
-        
         print(serializer.errors)
 
     def list(self, request):
-        queryset = Question.objects.all()
+        queryset = Question.objects.filter(isdeleted=False)
         #print(request.GET["assessmentid"])
         if "assessmentid" in request.GET:
             queryset = queryset.filter(assessments__id= request.GET["assessmentid"]).distinct()
@@ -155,12 +151,12 @@ class QuestionViewSet(viewsets.ModelViewSet):
     #     print(content)
 
 class ExhibitViewSet(viewsets.ModelViewSet):
-    queryset = Exhibit.objects.all().order_by('-created_on')
+    queryset = Exhibit.objects.filter(isdeleted=False).order_by('-created_on')
     serializer_class = ExhibitSerializer
     permission_classes = (IsAuthenticated,)
 
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.all().order_by('-id')
+    queryset = Role.objects.filter(isdeleted=False).order_by('-id')
     serializer_class = RoleSerializer
 
     def get_permissions(self):
@@ -176,13 +172,16 @@ class RoleViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 class ExcelViewSet(viewsets.ModelViewSet):
-    queryset = Excel.objects.all().order_by('-created_on')
+    queryset = Excel.objects.filter(isdeleted=False).order_by('-created_on')
     serializer_class = ExcelSerializer
     permission_classes = (IsAuthenticated,)
 
 class CwfViewSet(viewsets.ModelViewSet):
-    queryset = Cwf.objects.all().order_by('-id')
+    queryset = Cwf.objects.filter(isdeleted=False).order_by('-id')
     serializer_class = CwfSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
 
     def get_permissions(self):
         """
@@ -191,13 +190,13 @@ class CwfViewSet(viewsets.ModelViewSet):
         user = authenticate_token(self, self.request)
         #print(user["role"])
         if user["role"] == 'ADMIN':
-            permission_classes = [AllowAny]
+            permission_classes = [IsAuthenticated]
         else:
             permission_classes = [ReadOnly]
         return [permission() for permission in permission_classes]
 
 class KtViewSet(viewsets.ModelViewSet):
-    queryset = Kt.objects.all().order_by('-id')
+    queryset = Kt.objects.filter(isdeleted=False).order_by('-id')
     serializer_class = KtSerializer
 
     def get_permissions(self):
@@ -213,7 +212,7 @@ class KtViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 class StageViewSet(viewsets.ModelViewSet):
-    queryset = Stage.objects.all().order_by('-id')
+    queryset = Stage.objects.filter(isdeleted=False).order_by('-id')
     serializer_class = StageSerializer
 
     def get_permissions(self):
@@ -233,12 +232,12 @@ class QtypeViewSet(viewsets.ModelViewSet):
     serializer_class = QtypeSerializer
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all().order_by('-last_updated_on')
+    queryset = Comment.objects.filter(isdeleted=False).order_by('-last_updated_on')
     serializer_class = CommentSerializer
     permission_classes = (IsAuthenticated,)
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by('-first_name')
+    queryset = User.objects.filter(isdeleted=False).order_by('-first_name')
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)
     # def get_permissions(self):
@@ -261,20 +260,21 @@ class CwfKtStage(APIView):
     def get(self, request, format=None):
         response = {}
         #roleid = request.GET["role_code"]
+        role_obj = Role.objects.filter(isdeleted=False)
         if "role_code" in request.GET:
             roleid = [request.GET["role_code"]]
         else:
-            roleid = Role.objects.all().values_list('id', flat=True)
+            roleid = role_obj.values_list('id', flat=True)
         print(roleid)
         for role in roleid:
-            label = Role.objects.filter(id=role).values('name')
-            cwfs = Cwf.objects.filter(role__id=role).distinct()
+            label = role_obj.filter(id=role).values('name')
+            cwfs = Cwf.objects.filter(isdeleted=False).filter(role__id=role).distinct()
             cwf_main ={}
             for cwf in cwfs:
                 cwf_obj = {}
                 cwflabel = cwf.name
                 cwfcode = cwf.id
-                kts = Kt.objects.filter(cwf__id = cwf.id).distinct()
+                kts = Kt.objects.filter(isdeleted=False).filter(cwf__id = cwf.id).distinct()
                 #print(kts)
                 kt_array =[]
                 for kt in kts:
@@ -285,7 +285,7 @@ class CwfKtStage(APIView):
                 cwf_obj["keyTasks"] = kt_array
                 cwf_obj["label"] = cwflabel
                 cwf_main[cwfcode] = cwf_obj
-            stages = Stage.objects.filter(role__id=role).distinct()
+            stages = Stage.objects.filter(isdeleted=False).filter(role__id=role).distinct()
             stage_array =[]
             for stage in stages:
                 #print(stage.code)

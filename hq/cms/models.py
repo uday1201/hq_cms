@@ -2,6 +2,9 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import ArrayField
+
+
 
 # Create your models here.
 class Question(models.Model):
@@ -11,7 +14,7 @@ class Question(models.Model):
     ("REVIEWED", "Reviewed"),
     ("ARCHIVED", "Archived"),
     )
-    
+
     DIFFICULTY_CHOICES = (
     ("EASY", "EASY"),
     ("MEDIUM", "MEDIUM"),
@@ -26,7 +29,13 @@ class Question(models.Model):
     # assests for the question
     exhibits = models.ManyToManyField("Exhibit", blank=True)
     excels = models.ManyToManyField("Excel", blank=True)
-    context = models.JSONField(blank=True, null=True)
+    # context = ArrayField(
+    #         models.JSONField(blank=True, null=True),
+    #         size=10,
+    #         blank=True,
+    #         null=True
+    #     )
+    context = models.JSONField(default=list, blank=True)
     # content of the question
     text = models.CharField(max_length = 100, blank = False, null = False)
     qtype = models.ForeignKey("Qtype", on_delete = models.SET_NULL, null=True)
@@ -37,7 +46,7 @@ class Question(models.Model):
     resources = models.JSONField(blank=True, null=True)
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
-    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_approver') # if the user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='question_approver') # if the user is deleted it will set this field to NULL
     last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
     last_edited = models.DateTimeField(default=datetime.now, blank = True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
@@ -47,9 +56,11 @@ class Question(models.Model):
     misc = models.JSONField(blank=True, null=True)
     # status of the question
     status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
-        return self.id
+        return str(self.id)
 
 class Assessment(models.Model):
     ASSESSMENT_STATUS_CHOICES = (
@@ -66,20 +77,24 @@ class Assessment(models.Model):
     remarks = models.CharField(max_length=1000, blank = True)
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_creator') # if the creator user is deleted it will set this field to NULL
-    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_approver') # if the user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='assessment_approver') # if the user is deleted it will set this field to NULL
     last_updated = models.DateTimeField(default=datetime.now, blank = True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='assessment_assignedto')
     status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
-        return str(self.id)
+        return self.name
 
 class Role(models.Model):
     #role_id = models.AutoField(primary_key=True)
     id = models.CharField(max_length = 20, primary_key=True)
     name = models.CharField(max_length = 100, blank = False)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='role_creator')
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return self.name
@@ -94,6 +109,8 @@ class Exhibit(models.Model):
     type = models.CharField(max_length = 100, blank = True, default="exhibit")
     created_on = models.DateTimeField(default=datetime.now, blank = True)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='exhibit_creator')
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return self.alt_text
@@ -105,6 +122,8 @@ class Excel(models.Model):
     alt_text = models.CharField(max_length = 100, blank = True)
     created_on = models.DateTimeField(default=datetime.now, blank = True)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='excel_creator')
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return self.alt_text
@@ -119,6 +138,8 @@ class User(AbstractUser):
     )
     email = models.EmailField(max_length = 200)
     access_role = models.CharField(max_length=20, choices = ROLE_CHOICES, default = "Member")
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return self.username
@@ -130,9 +151,11 @@ class Cwf(models.Model):
     role = models.ManyToManyField("Role", related_name="cwf_role")
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='cwf_creator')
     #assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assigned_to')
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
-        return self.name
+        return self.id
 
 
 class Kt(models.Model):
@@ -142,9 +165,11 @@ class Kt(models.Model):
     role = models.ManyToManyField("Role")
     cwf = models.ManyToManyField("Cwf")
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='kt_creator')
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
-        return self.name
+        return self.id
 
 class Stage(models.Model):
     #stage_id = models.AutoField(primary_key=True)
@@ -153,9 +178,11 @@ class Stage(models.Model):
     role = models.ManyToManyField("Role")
     order = models.IntegerField(default=0)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='stage_creator')
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
-        return self.name
+        return self.id
 
 class Qtype(models.Model):
     qtype_id = models.AutoField(primary_key=True)
@@ -173,6 +200,8 @@ class Comment(models.Model):
     date_posted = models.DateTimeField(auto_now_add=True, blank=True)
     last_updated_on = models.DateTimeField(auto_now=True, blank = True)
     mentioned = models.ManyToManyField("User", related_name='question_mentioned', blank=True)
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return self.content

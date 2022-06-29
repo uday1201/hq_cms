@@ -6,16 +6,23 @@ from drf_extra_fields.fields import Base64ImageField
 from .models import *
 
 class AssessmentSerializer(serializers.ModelSerializer):
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Assessment
-        fields = ['id', 'name','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status']
+        fields = ['id', 'name','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status','isdeleted']
 
 class QuestionSerializer(serializers.ModelSerializer):
     # assessmentid = serializers.CharField(write_only=True)
     assessmentid = serializers.ListField(write_only=True)
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Question
-        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','creator','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','resources','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid','isdeleted']
+
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['last_edited_by'] = self.context['request'].user
+        return self.update(request, *args, **kwargs)
 
     def create(self, validated_data):
         question = Question.objects.create(
@@ -27,10 +34,9 @@ class QuestionSerializer(serializers.ModelSerializer):
         score_type = validated_data["score_type"],
         score_weight = validated_data["score_weight"],
         # resources = validated_data["resources"],
-        # creator = validated_data["creator"],
-        # approved_by = validated_data["approved_by"],
+        approved_by = validated_data["approved_by"],
         # last_edited_by = validated_data["last_edited_by"],
-        # status = validated_data["status"],
+        status = validated_data["status"],
         )
 
         # setting the manytomany fields
@@ -57,36 +63,45 @@ class QuestionSerializer(serializers.ModelSerializer):
         return question
 
 class RoleSerializer(serializers.ModelSerializer):
+    serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Role
         fields = '__all__'
 
 class ExhibitSerializer(serializers.ModelSerializer):
+    serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Exhibit
-        fields = ['image','alt_text','type']
+        fields = ['image','alt_text','type','isdeleted']
 
 class ExcelSerializer(serializers.ModelSerializer):
+    serializers.HiddenField(default=serializers.CurrentUserDefault())
     image=Base64ImageField()
     class Meta:
         model = Exhibit
-        fields = ['id','image','alt_text','type']
+        fields = ['id','image','alt_text','type','isdeleted']
     def create(self, validated_data):
         image=validated_data.pop('image')
         alt_text=validated_data.pop('alt_text')
         return Exhibit.objects.create(image=image,alt_text=alt_text)
 
+
 class CwfSerializer(serializers.ModelSerializer):
+    #cwf_creator = serializers.StringRelatedField(default=serializers.CurrentUserDefault(), read_only=True)
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Cwf
         fields = '__all__'
+        #extra_kwargs = {'creator': {'default': serializers.CurrentUserDefault(),'read_only':True}}
 
 class KtSerializer(serializers.ModelSerializer):
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Kt
         fields = '__all__'
 
 class StageSerializer(serializers.ModelSerializer):
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Stage
         fields = '__all__'
@@ -97,9 +112,10 @@ class QtypeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Comment
-        fields = ['author','content','question','mentioned']
+        fields = ['author','content','question','mentioned','isdeleted']
 
 class UserSerializer(serializers.ModelSerializer):
     #full_name = serializers.SerializerMethodField()
@@ -107,7 +123,7 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True,validators=[validate_password])
     class Meta:
         model = User
-        fields = ["first_name","last_name", "id","email","access_role","username", "password"]
+        fields = ["first_name","last_name", "id","email","access_role","username", "password","isdeleted"]
         extra_kwargs = {
             'username': {'required': True}
         }
