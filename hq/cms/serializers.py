@@ -19,7 +19,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid','isdeleted']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','assessmentid','isdeleted','misc']
         extra_kwargs = {'score_type': {'required': False},'score_weight': {'required': False}}
 
     def update(self, instance, validated_data):
@@ -38,10 +38,12 @@ class QuestionSerializer(serializers.ModelSerializer):
         options = validated_data["options"],
         score_type = validated_data["score_type"],
         score_weight = validated_data["score_weight"],
+        misc = validated_data["misc"],
         # resources = validated_data["resources"],
-        approved_by = validated_data["approved_by"],
+        # approved_by = validated_data["approved_by"],
         # last_edited_by = validated_data["last_edited_by"],
-        status = validated_data["status"],
+        # status = validated_data["status"],
+        status = "SAVED"
         )
 
         # setting the manytomany fields
@@ -51,7 +53,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
         # setting excels and exhibits from context {"context" : list(context)} --> [{"type" : <>, "value" : ,"id" :}]
         if validated_data["context"] is not None:
-            context_array = validated_data["context"]["contextList"]
+            context_array = validated_data["context"]
             for context in context_array:
                 if context["type"] == "exhibit":
                     question.exhibits.add(context["id"])
