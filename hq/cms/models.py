@@ -66,6 +66,7 @@ class Assessment(models.Model):
     ASSESSMENT_STATUS_CHOICES = (
     ("ACTIVE", "Active"),
     ("ARCHIVED", "Archived"),
+    ("APPROVED", "Approved"),
     )
 
     id = models.AutoField(primary_key=True)
