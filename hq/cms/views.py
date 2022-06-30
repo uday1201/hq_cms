@@ -163,10 +163,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = Question.objects.filter(isdeleted=False).filter(id=pk)
         # return comments linked to the question
         queryset = get_comments(queryset)
-
         serializer = QuestionSerializer(queryset, many=True)
-        page = self.paginate_queryset(serializer.data)
-        return Response(page)
+        return Response(serializer.data[0])
 
     # def create(self, request):
     #     content = request.data
