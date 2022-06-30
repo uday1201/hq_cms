@@ -86,7 +86,7 @@ class Question(models.Model):
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
     # bidirectional ManyToManyField
-    linked_assessments = models.ManyToManyField('Assessment', through = Assessment.qlist.through, blank=True)
+    assessmentid = models.ManyToManyField('Assessment', through = Assessment.qlist.through, blank=True)
 
     def __str__(self):
         return str(self.id)

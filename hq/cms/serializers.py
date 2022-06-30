@@ -20,7 +20,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','isdeleted','linked_assessments','misc','comments']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','isdeleted','assessmentid','misc','comments']
 
     def update(self, instance, validated_data):
         demo = Question.objects.get(pk=instance.id)
