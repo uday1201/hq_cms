@@ -53,7 +53,7 @@ class Question(models.Model):
     cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
     kt = models.ManyToManyField("Kt",blank=True)
     role = models.ManyToManyField("Role",blank=True)
-    stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True) # if the stage id is delelted it will set this field to NULL
+    stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True, blank=True) # if the stage id is delelted it will set this field to NULL
     # assests for the question
     exhibits = models.ManyToManyField("Exhibit", blank=True)
     excels = models.ManyToManyField("Excel", blank=True)
@@ -86,9 +86,12 @@ class Question(models.Model):
     status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
+    # bidirectional ManyToManyField
+    assessmentid = models.ManyToManyField('Assessment', through = Assessment.qlist.through, blank=True)
 
     def __str__(self):
         return str(self.id)
+
 
 
 class Role(models.Model):
