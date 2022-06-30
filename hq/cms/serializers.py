@@ -25,8 +25,35 @@ class QuestionSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         demo = Question.objects.get(pk=instance.id)
         validated_data["last_edited_by"] = self.context['request'].user
-        Question.objects.filter(pk=instance.id).update(**validated_data)
+
+        if validated_data["cwf"] is not None:
+            demo.cwf.set(validated_data["cwf"])
+        del validated_data["cwf"]
+
+        if validated_data["kt"] is not None:
+            demo.kt.set(validated_data["kt"])
+        del validated_data["kt"]
+
+        if validated_data["role"] is not None:
+            demo.role.set(validated_data["role"])
+        del validated_data["role"]
+
+        if validated_data["assessmentid"] is not None:
+            demo.assessmentid.set(validated_data["assessmentid"])
+        del validated_data["assessmentid"]
+
+        if validated_data["exhibits"] is not None:
+            demo.exhibits.set(validated_data["exhibits"])
+        del validated_data["exhibits"]
+
+        if validated_data["excels"] is not None:
+            demo.excels.set(validated_data["excels"])
+        del validated_data["excels"]
+
         print(validated_data)
+        Question.objects.filter(pk=instance.id).update(**validated_data)
+        #demo.cwf.add(validated_data["cwf"])
+
         return demo
 
     # def create(self, validated_data):

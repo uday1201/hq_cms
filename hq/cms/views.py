@@ -123,13 +123,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
     pagination_class = QuestionSetPagination
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request):
-        # print("question")
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            return Response()
-        print(serializer.errors)
-
     def list(self, request):
         queryset = Question.objects.filter(isdeleted=False)
         #print(request.GET["assessmentid"])
