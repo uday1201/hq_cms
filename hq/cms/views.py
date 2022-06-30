@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from requests import request
-
+import json
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -36,7 +36,7 @@ class ReadOnly(BasePermission):
 def authenticate_token(self, request):
     #access_token = request.COOKIES.get('auth_token')
     access_token = request.headers['Authorization'].split(" ")[-1]
-    print(access_token)
+    #print(access_token)
     user=Token.objects.get(key=access_token).user
     print('role: ', user.access_role )
     return {"user_id": user.id, "name": user.first_name ,"username": user.username, "role" :user.access_role}
@@ -101,18 +101,29 @@ class QuestionSetPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
+# function to get comments of the questions queryset
+def get_comments(queryset):
+    for q in queryset:
+        comments = []
+        for comment in Comment.objects.filter(question = q).order_by('-last_updated_on'):
+            print(comment)
+            comments.append(
+                {
+                    "id" : comment.id,
+                    "author" : comment.author.username,
+                    "content" : comment.content,
+                    "date_posted": comment.date_posted
+                }
+            )
+        print(comments)
+        q.comments = comments
+    return queryset
+
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.filter(isdeleted=False)
     serializer_class = QuestionSerializer
     pagination_class = QuestionSetPagination
     permission_classes = (IsAuthenticated,)
-
-    def post(self, request):
-        # print("question")
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            return Response()
-        print(serializer.errors)
 
     def list(self, request):
         queryset = Question.objects.filter(isdeleted=False)
@@ -135,10 +146,20 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if "starttime" in request.GET and "endtime" in request.GET:
             queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
 
+        # return comments linked to the questions
+        queryset = get_comments(queryset)
+
         queryset_order = queryset.order_by('-last_edited')
         serializer = QuestionSerializer(queryset, many=True)
         page = self.paginate_queryset(serializer.data)
         return Response(page)
+
+    def retrieve(self, request, pk=None):
+        queryset = Question.objects.filter(isdeleted=False).filter(id=pk)
+        # return comments linked to the question
+        queryset = get_comments(queryset)
+        serializer = QuestionSerializer(queryset, many=True)
+        return Response(serializer.data[0])
 
     # def create(self, request):
     #     content = request.data
@@ -363,7 +384,6 @@ class CwfKtStage(APIView):
 
     def get(self, request, format=None):
         response = {}
-        #roleid = request.GET["role_code"]
         role_obj = Role.objects.filter(isdeleted=False)
         if "role_code" in request.GET:
             roleid = [request.GET["role_code"]]
