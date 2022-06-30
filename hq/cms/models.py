@@ -7,66 +7,11 @@ from django.contrib.postgres.fields import ArrayField
 
 
 # Create your models here.
-class Question(models.Model):
-    STATUS_CHOICES = (
-    ("SAVED", "Saved"),
-    ("UNDERREVIEW", "Under Review"),
-    ("REVIEWED", "Reviewed"),
-    ("ARCHIVED", "Archived"),
-    )
-
-    DIFFICULTY_CHOICES = (
-    ("EASY", "EASY"),
-    ("MEDIUM", "MEDIUM"),
-    ("HARD", "HARD"),
-    )
-    id = models.AutoField(primary_key=True)
-    # details of the question
-    cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
-    kt = models.ManyToManyField("Kt",blank=True)
-    role = models.ManyToManyField("Role",blank=True)
-    stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True) # if the stage id is delelted it will set this field to NULL
-    # assests for the question
-    exhibits = models.ManyToManyField("Exhibit", blank=True)
-    excels = models.ManyToManyField("Excel", blank=True)
-    # context = ArrayField(
-    #         models.JSONField(blank=True, null=True),
-    #         size=10,
-    #         blank=True,
-    #         null=True
-    #     )
-    context = models.JSONField(default=list, blank=True)
-    # content of the question
-    text = models.CharField(max_length = 100, blank = False, null = False)
-    qtype = models.ForeignKey("Qtype", on_delete = models.SET_NULL, null=True)
-    options = models.JSONField(blank=True, null=True)
-    score_type = models.CharField(max_length = 10, blank = False, null = False)
-    score_weight = models.FloatField(validators = [MinValueValidator(0)])
-    # extras
-    resources = models.JSONField(blank=True, null=True)
-    # timestamp and tracking
-    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
-    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='question_approver') # if the user is deleted it will set this field to NULL
-    last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
-    last_edited = models.DateTimeField(auto_now =True)
-    created = models.DateTimeField(auto_now_add =True)
-    # miscellaneous fields
-    idealtime = models.FloatField(blank=True, null=True)
-    difficulty_level = models.CharField(max_length=50, choices=DIFFICULTY_CHOICES, blank=True, null=True, default="MEDIUM")
-    misc = models.JSONField(blank=True, null=True)
-    # status of the question
-    status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
-    # deleted field
-    isdeleted = models.BooleanField(blank=True, default=False)
-
-    def __str__(self):
-        return str(self.id)
 
 class Assessment(models.Model):
     ASSESSMENT_STATUS_CHOICES = (
     ("ACTIVE", "Active"),
     ("ARCHIVED", "Archived"),
-    ("APPROVED", "Approved"),
     )
 
     id = models.AutoField(primary_key=True)
@@ -88,6 +33,65 @@ class Assessment(models.Model):
 
     def __str__(self):
         return self.name
+
+class Question(models.Model):
+    STATUS_CHOICES = (
+    ("SAVED", "Saved"),
+    ("UNDERREVIEW", "Under Review"),
+    ("REVIEWED", "Reviewed"),
+    ("ARCHIVED", "Archived"),
+    )
+
+    DIFFICULTY_CHOICES = (
+    ("EASY", "EASY"),
+    ("MEDIUM", "MEDIUM"),
+    ("HARD", "HARD"),
+    )
+    id = models.AutoField(primary_key=True)
+    # details of the question
+    cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
+    kt = models.ManyToManyField("Kt",blank=True)
+    role = models.ManyToManyField("Role",blank=True)
+    stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True, blank=True) # if the stage id is delelted it will set this field to NULL
+    # assests for the question
+    exhibits = models.ManyToManyField("Exhibit", blank=True)
+    excels = models.ManyToManyField("Excel", blank=True)
+    # context = ArrayField(
+    #         models.JSONField(blank=True, null=True),
+    #         size=10,
+    #         blank=True,
+    #         null=True
+    #     )
+    context = models.JSONField(default=list, blank=True)
+    # content of the question
+    text = models.CharField(max_length = 100, blank = False, null = False)
+    qtype = models.ForeignKey("Qtype", on_delete = models.SET_NULL, null=True)
+    options = models.JSONField(blank=True, null=True)
+    score_type = models.CharField(max_length = 10, blank = False, null = False)
+    score_weight = models.FloatField(validators = [MinValueValidator(0)])
+    # extras
+    # resources = models.JSONField(blank=True, null=True)
+    # timestamp and tracking
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='question_approver') # if the user is deleted it will set this field to NULL
+    last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
+    last_edited = models.DateTimeField(auto_now =True)
+    created = models.DateTimeField(auto_now_add =True)
+    # miscellaneous fields
+    idealtime = models.FloatField(blank=True, null=True)
+    difficulty_level = models.CharField(max_length=50, choices=DIFFICULTY_CHOICES, blank=True, null=True, default="MEDIUM")
+    misc = models.JSONField(blank=True, null=True)
+    # status of the question
+    status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
+    # bidirectional ManyToManyField
+    assessmentid = models.ManyToManyField('Assessment', through = Assessment.qlist.through, blank=True)
+
+    def __str__(self):
+        return str(self.id)
+
+
 
 class Role(models.Model):
     #role_id = models.AutoField(primary_key=True)
@@ -179,7 +183,7 @@ class Stage(models.Model):
     id = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
     role = models.ManyToManyField("Role")
-    order = models.IntegerField(default=0)
+    order = models.IntegerField(default=0, blank=True)
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='stage_creator')
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
