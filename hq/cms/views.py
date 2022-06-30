@@ -10,6 +10,8 @@ from .models import *
 from rest_framework.authtoken.models import Token
 from django.core.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
+import random
+import string
 
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission, SAFE_METHODS, AllowAny
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -82,8 +84,8 @@ class AssessmentViewSet(viewsets.ModelViewSet):
 
 class Logout(APIView):
     permission_classes = (IsAuthenticated,)
-    http_method_names = ['post']
-    def post(self, request):
+    http_method_names = ['get']
+    def get(self, request):
         return self.logout(request)
 
     def logout(self, request):
@@ -236,23 +238,128 @@ class CommentViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(isdeleted=False).order_by('-first_name')
     serializer_class = UserSerializer
-    permission_classes = (AllowAny,)
-    # def get_permissions(self):
-    #     """
-    #     Custom permissions, allow members to read only
-    #     """
-    #     access_token = self.request.headers['Authorization'].split(" ")[-1]
-    #     user=Token.objects.get(key=access_token).user
-    #     print(user.access_role)
-    #     if user.access_role == 'ADMIN':
-    #         permission_classes = [IsAuthenticated]
-    #     else:
-    #         permission_classes = [ReadOnly]
-    #     return [permission() for permission in permission_classes]
+    http_method_names = ['get','post','patch']
+
+    def list(self, request):
+        user = authenticate_token(self, request)
+        queryset = User.objects.filter(isdeleted=False).order_by('-id')
+        if user["role"] == "MEMBER":
+            queryset = User.objects.filter(id = user["user_id"])
+        serializer = UserSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def partial_update(self, request, pk=None):
+        user = authenticate_token(self, request)
+        if int(pk) == int(user["user_id"]):
+            return super().partial_update(request, pk)
+        else:
+            return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
+
+    def retrieve(self, request, pk=None):
+        user = authenticate_token(self, request)
+        if pk == user["user_id"]:
+            queryset = User.objects.filter(id = user["user_id"])
+            serializer = UserSerializer(queryset, many=True)
+            return Response(serializer.data)
+        else:
+            return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
+
 
 class CwfKtStage(APIView):
     permission_classes = (IsAuthenticated,)
-    http_method_names = ['get']
+    http_method_names = ['get','post']
+
+    def post(self, request):
+        access_token = request.headers['Authorization'].split(" ")[-1]
+        user=Token.objects.get(key=access_token).user
+        reqs = request.body.decode('utf-8')
+        valid_data = json.loads(reqs)
+        print(valid_data["role"].get("label"))
+        if not valid_data.get("role"):
+            return status.HTTP_500_INTERNAL_SERVER_ERROR
+        if not valid_data["role"].get("value"):
+            #role = create_role()
+            role = Role.objects.create(
+                # id = "dummyid11",
+                id = ''.join(random.choices(string.ascii_lowercase, k=5)),
+                name = valid_data["role"].get("label"),
+                creator = user
+            )
+            print(user)
+            role.save()
+            role_id = role.id
+            print(role_id)
+        else:
+            Role.objects.filter(
+            id = valid_data["role"].get("value")
+            ).update(
+                name = valid_data["role"].get("label")
+            )
+            role_id = valid_data["role"].get("value")
+        print(role_id)
+        for i in range(len(valid_data.get("stage"))):
+            cstage = valid_data["stage"][i]
+            if not cstage.get("value"):
+                stage = Stage.objects.create(
+                    # id = "dummyid11",
+                    id = ''.join(random.choices(string.ascii_lowercase, k=5)),
+                    name = cstage.get("label"),
+                    creator = user
+                )
+                stage.role.set([role_id])
+                stage.save()
+            else:
+                stage = Stage.objects.get(
+                    id = cstage.get("value")
+                )
+                stage.name = cstage.get("label")
+                stage.role.add(role_id)
+                stage.save()
+            stage_id = stage.id
+
+        for i in range(len(valid_data.get("wf"))):
+            wfdata = valid_data["wf"][i]
+            if not wfdata.get("value"):
+                cwfun = Cwf.objects.create(
+                    # id = "dummyid11",
+                    id = ''.join(random.choices(string.ascii_lowercase, k=5)),
+                    name = wfdata.get("label"),
+                    creator = user
+                )
+                cwfun.role.set([role_id])
+                cwfun.save()
+
+            else:
+                cwfun = Cwf.objects.get(
+                    id = wfdata.get("value")
+                )
+                cwfun.name = wfdata.get("label")
+                cwfun.role.add(role_id)
+                cwfun.save()
+            cwf_id = cwfun.id
+
+            for j in range(len(wfdata["keyTask"])):
+                ktdata = wfdata["keyTask"][j]
+                if not ktdata.get("value"):
+                    kt = Kt.objects.create(
+                        # id = "dummyid11",
+                        id = ''.join(random.choices(string.ascii_lowercase, k=5)),
+                        name = ktdata.get("label"),
+                        creator = user
+                    )
+                    kt.role.set([role_id])
+                    kt.cwf.set([cwf_id])
+                    kt.save()
+                else:
+                    kt = Kt.objects.get(
+                        id = ktdata.get("value")
+                    )
+                    kt.name = ktdata.get("label")
+                    kt.role.add(role_id)
+                    kt.cwf.add(cwf_id)
+                    kt.save()
+        return Response({"success": "Successfully created"},
+                        status=status.HTTP_200_OK)
 
     def get(self, request, format=None):
         response = {}

@@ -7,6 +7,34 @@ from django.contrib.postgres.fields import ArrayField
 
 
 # Create your models here.
+
+class Assessment(models.Model):
+    ASSESSMENT_STATUS_CHOICES = (
+    ("ACTIVE", "Active"),
+    ("ARCHIVED", "Archived"),
+    ("APPROVED", "Approved"),
+    )
+
+    id = models.AutoField(primary_key=True)
+    problem_statement = models.CharField(max_length=1000, blank = True)
+    name = models.CharField(max_length=100, blank = True)
+    qlist = models.ManyToManyField("Question",blank=True, related_name='assessments')
+    # role = models.ManyToManyField("Role",blank=True)
+    role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='assessment_role') # if the creator user is deleted it will set this field to NULL
+    remarks = models.CharField(max_length=1000, blank = True)
+    # timestamp and tracking
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_creator') # if the creator user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='assessment_approver') # if the user is deleted it will set this field to NULL
+    last_updated = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='assessment_assignedto')
+    status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return self.name
+
 class Question(models.Model):
     STATUS_CHOICES = (
     ("SAVED", "Saved"),
