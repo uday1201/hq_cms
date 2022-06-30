@@ -82,8 +82,8 @@ class AssessmentViewSet(viewsets.ModelViewSet):
 
 class Logout(APIView):
     permission_classes = (IsAuthenticated,)
-    http_method_names = ['post']
-    def post(self, request):
+    http_method_names = ['get']
+    def get(self, request):
         return self.logout(request)
 
     def logout(self, request):
