@@ -10,7 +10,7 @@ from .models import *
 from rest_framework.authtoken.models import Token
 from django.core.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
-
+from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission, SAFE_METHODS, AllowAny
 from rest_framework.authtoken.views import ObtainAuthToken
 from django.views.decorators.csrf import csrf_exempt
@@ -125,9 +125,20 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         queryset = Question.objects.filter(isdeleted=False)
+
+        user = authenticate_token(self, request)
         #print(request.GET["assessmentid"])
+        # filtering from the user
+        assessment_queryset = Assessment.objects.filter(Q(creator=user["user_id"]) | Q(assigned_to=user["user_id"]))
+        assessments = []
+        for a in assessment_queryset:
+            assessments.append(a.id)
+
+        if user["role"] != "ADMIN":
+            queryset = queryset.filter(Q(creator=user["user_id"]) | Q(assessmentid__in=assessments))
+
         if "assessmentid" in request.GET:
-            queryset = queryset.filter(assessments__id= request.GET["assessmentid"]).distinct()
+            queryset = queryset.filter(assessmentid= request.GET["assessmentid"]).distinct()
 
         if "cwf" in request.GET:
             queryset = queryset.filter(cwf=request.GET["cwf"]).distinct()
@@ -154,10 +165,30 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, pk=None):
         queryset = Question.objects.filter(isdeleted=False).filter(id=pk)
+        #check the user rights
+        user = authenticate_token(self, request)
+        # get asessments
+        assessment_queryset = Assessment.objects.filter(Q(creator=user["user_id"]) | Q(assigned_to=user["user_id"]))
+        assessments = []
+        for a in assessment_queryset:
+            assessments.append(a.id)
+        # check the condition to return the question
+        for question in queryset:
+            qassessments = []
+            for qassessment in question.assessmentid.all():
+                qassessments.append(qassessment.id)
+            if question.creator == user["user_id"] or len(set(qassessments) & set(assessments)) != 0 or user['role'] == 'ADMIN':
+                flag = True
+            else:
+                flag = False
+
         # return comments linked to the question
         queryset = get_comments(queryset)
-        serializer = QuestionSerializer(queryset, many=True)
-        return Response(serializer.data[0])
+        if flag:
+            serializer = QuestionSerializer(queryset, many=True)
+            return Response(serializer.data[0])
+        else:
+            return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
 
     # def create(self, request):
     #     content = request.data
