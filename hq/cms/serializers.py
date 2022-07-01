@@ -137,6 +137,12 @@ class ExhibitSerializer(serializers.ModelSerializer):
         alt_text=validated_data.pop('alt_text')
         return Exhibit.objects.create(image=image,alt_text=alt_text)
 
+    def to_representation(self, instance):
+        response = super(ExhibitSerializer, self).to_representation(instance)
+        if instance.image:
+            response['image'] = instance.image.url
+        return response
+
 class ExcelSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
