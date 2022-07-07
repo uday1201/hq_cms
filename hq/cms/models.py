@@ -19,7 +19,7 @@ class Assessment(models.Model):
     problem_statement = models.CharField(max_length=1000, blank = True)
     name = models.CharField(max_length=100, blank = True)
     qlist = models.ManyToManyField("Question",blank=True, related_name='assessments')
-    # role = models.ManyToManyField("Role",blank=True)
+    qorder = models.JSONField(default=list, blank=True)
     role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='assessment_role') # if the creator user is deleted it will set this field to NULL
     remarks = models.CharField(max_length=1000, blank = True)
     # timestamp and tracking

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import status
 
 from .models import *
 
@@ -9,11 +10,9 @@ class AssessmentSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Assessment
-        fields = ['id', 'name','problem_statement','qlist','role','remarks','creator','approved_by','assigned_to','status','isdeleted']
+        fields = ['id', 'name','problem_statement','qlist','qorder','role','remarks','creator','approved_by','assigned_to','status','isdeleted']
 
 class QuestionSerializer(serializers.ModelSerializer):
-    # assessmentid = serializers.CharField(write_only=True)
-    # assessmentid = serializers.ListField(write_only=True,required=False)
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     comments = serializers.JSONField(default=list,read_only=True,required=False)
@@ -25,30 +24,6 @@ class QuestionSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         demo = Question.objects.get(pk=instance.id)
         validated_data["last_edited_by"] = self.context['request'].user
-
-        # if validated_data["cwf"] is not None:
-        #     demo.cwf.set(validated_data["cwf"])
-        # del validated_data["cwf"]
-
-        # if validated_data["kt"] is not None:
-        #     demo.kt.set(validated_data["kt"])
-        # del validated_data["kt"]
-
-        # if validated_data["role"] is not None:
-        #     demo.role.set(validated_data["role"])
-        # del validated_data["role"]
-
-        # if validated_data["assessmentid"] is not None:
-        #     demo.assessmentid.set(validated_data["assessmentid"])
-        # del validated_data["assessmentid"]
-
-        # if validated_data["exhibits"] is not None:
-        #     demo.exhibits.set(validated_data["exhibits"])
-        # del validated_data["exhibits"]
-
-        # if validated_data["excels"] is not None:
-        #     demo.excels.set(validated_data["excels"])
-        # del validated_data["excels"]
 
         if validated_data.get("cwf"):
             demo.cwf.set(validated_data["cwf"])
@@ -82,43 +57,6 @@ class QuestionSerializer(serializers.ModelSerializer):
 
         return demo
 
-    # def create(self, validated_data):
-    #     question = Question.objects.create(
-    #     stage = validated_data["stage"],
-    #     context = validated_data["context"],
-    #     text = validated_data["text"],
-    #     qtype = validated_data["qtype"],
-    #     options = validated_data["options"],
-    #     score_type = validated_data["score_type"],
-    #     score_weight = validated_data["score_weight"],
-    #     # resources = validated_data["resources"],
-    #     # approved_by = validated_data["approved_by"],
-    #     # last_edited_by = validated_data["last_edited_by"],
-    #     status = validated_data["status"],
-    #     )
-    #
-    #     # setting the manytomany fields
-    #     question.cwf.set(validated_data["cwf"])
-    #     question.kt.set(validated_data["kt"])
-    #     question.role.set(validated_data["role"])
-    #
-    #     # setting excels and exhibits from context {"context" : list(context)} --> [{"type" : <>, "value" : ,"id" :}]
-    #     if validated_data["context"] is not None:
-    #         context_array = validated_data["context"]["contextList"]
-    #         for context in context_array:
-    #             if context["type"] == "exhibit":
-    #                 question.exhibits.add(context["id"])
-    #             if context["type"] == "excel":
-    #                 question.excels.add(context["id"])
-    #
-    #     # saving the question object
-    #     obj = question.save()
-    #
-    #     # adding the question to assessment
-    #     assessment_id = validated_data["assessmentid"]
-    #     for aid in assessment_id:
-    #         Assessment.objects.get(id=aid).qlist.add(question.id)
-    #     return question
 
 class RoleSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -181,35 +119,38 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ['id','author','content','question','mentioned','isdeleted']
 
 class UserSerializer(serializers.ModelSerializer):
-    #full_name = serializers.SerializerMethodField()
-    email = serializers.EmailField(required=True,validators=[UniqueValidator(queryset=User.objects.all())])
+    #email = serializers.EmailField(required=True,validators=[UniqueValidator(queryset=User.objects.all())])
     password = serializers.CharField(write_only=True, required=True,validators=[validate_password])
     class Meta:
         model = User
         fields = ["first_name","last_name", "id","email","access_role","username", "password","isdeleted"]
         extra_kwargs = {
-            'username': {'required': True}
+            'username': {'required': True},
+            'first_name': {'required': False},
+            'last_name': {'required': False}
         }
 
     def create(self, validated_data):
         permission = self.context['request'].user.access_role
-
         if permission == "ADMIN":
             user = User.objects.create(
                 username=validated_data['username'],
                 email=validated_data['email'],
-                first_name=validated_data['first_name'],
-                last_name=validated_data['last_name'],
                 access_role=validated_data['access_role']
             )
+
+            if validated_data.get('first_name'):
+                user.first_name.set(validated_data['first_name'])
+
+            if validated_data.get('last_name'):
+                user.last_name.set(validated_data['last_name'])
+
             user.set_password(validated_data['password'])
             user.save()
             return user
         else:
             return status.HTTP_401_UNAUTHORIZED
 
-    # def get_full_name(self, obj):
-    #     return '{} {}'.format(obj.first_name, obj.last_name)
 
 class SnippetSerializer(serializers.ModelSerializer):
     class Meta:
