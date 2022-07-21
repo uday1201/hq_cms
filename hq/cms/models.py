@@ -193,8 +193,8 @@ class Stage(models.Model):
         return self.id
 
 class Qtype(models.Model):
-    qtype_id = models.AutoField(primary_key=True)
-    code = models.CharField(max_length = 100, unique=True, blank = False, null = False)
+    #qtype_id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
 
     def __str__(self):

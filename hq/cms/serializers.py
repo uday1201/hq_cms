@@ -3,6 +3,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import status
+from django.http import HttpResponse
 
 from .models import *
 
@@ -16,10 +17,12 @@ class QuestionSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     comments = serializers.JSONField(default=list,read_only=True,required=False)
+    qtype_name = serializers.CharField(max_length=100, default="NA")
+
 
     class Meta:
         model = Question
-        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','isdeleted','assessmentid','misc','comments']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','qtype_name','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','isdeleted','assessmentid','misc','comments']
 
     def update(self, instance, validated_data):
         demo = Question.objects.get(pk=instance.id)
@@ -54,7 +57,6 @@ class QuestionSerializer(serializers.ModelSerializer):
         print(validated_data)
         Question.objects.filter(pk=instance.id).update(**validated_data)
         #demo.cwf.add(validated_data["cwf"])
-
         return demo
 
 
@@ -120,7 +122,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     #email = serializers.EmailField(required=True,validators=[UniqueValidator(queryset=User.objects.all())])
-    password = serializers.CharField(write_only=True, required=True,validators=[validate_password])
+    password = serializers.CharField(write_only=True, required=True)
     class Meta:
         model = User
         fields = ["first_name","last_name", "id","email","access_role","username", "password","isdeleted"]
@@ -140,16 +142,16 @@ class UserSerializer(serializers.ModelSerializer):
             )
 
             if validated_data.get('first_name'):
-                user.first_name.set(validated_data['first_name'])
+                user.first_name = validated_data['first_name']
 
             if validated_data.get('last_name'):
-                user.last_name.set(validated_data['last_name'])
+                user.last_name = validated_data['last_name']
 
             user.set_password(validated_data['password'])
             user.save()
             return user
         else:
-            return status.HTTP_401_UNAUTHORIZED
+            raise serializers.ValidationError({"Error": "You are not authorized to do this action"})
 
 
 class SnippetSerializer(serializers.ModelSerializer):

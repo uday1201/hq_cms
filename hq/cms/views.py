@@ -119,6 +119,15 @@ def get_comments(queryset):
         q.comments = comments
     return queryset
 
+# function to get qtypename
+def get_qtype(queryset):
+    # get the qtype name
+    for q in queryset:
+        for qtype in Qtype.objects.filter(question = q):
+            q.qtype_name = qtype.name
+    return queryset
+
+
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.filter(isdeleted=False)
     serializer_class = QuestionSerializer
@@ -159,6 +168,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         # return comments linked to the questions
         queryset = get_comments(queryset)
+        # get the qtype name
+        queryset = get_qtype(queryset)
 
         queryset_order = queryset.order_by('-last_edited')
         serializer = QuestionSerializer(queryset, many=True)
@@ -179,13 +190,15 @@ class QuestionViewSet(viewsets.ModelViewSet):
             qassessments = []
             for qassessment in question.assessmentid.all():
                 qassessments.append(qassessment.id)
-            if question.creator == user["user_id"] or len(set(qassessments) & set(assessments)) != 0 or user['role'] == 'ADMIN':
+            if question.creator.id == user["user_id"] or len(set(qassessments) & set(assessments)) != 0 or user['role'] == 'ADMIN':
                 flag = True
             else:
                 flag = False
 
         # return comments linked to the question
         queryset = get_comments(queryset)
+        # get the qtype name
+        queryset = get_qtype(queryset)
         if flag:
             serializer = QuestionSerializer(queryset, many=True)
             return Response(serializer.data[0])
@@ -279,7 +292,7 @@ class StageViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 class QtypeViewSet(viewsets.ModelViewSet):
-    queryset = Qtype.objects.all().order_by('-qtype_id')
+    queryset = Qtype.objects.all().order_by('-code')
     serializer_class = QtypeSerializer
 
 class CommentViewSet(viewsets.ModelViewSet):
