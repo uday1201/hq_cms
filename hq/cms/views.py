@@ -205,17 +205,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
         else:
             return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
 
-    # def create(self, request):
-    #     content = request.data
-    #     # get assessment id from the question response
-    #     if "assessmentid" in content:
-    #         assessment_id = content["assessmentid"]
-    #         # delete it from the content field
-    #         assessment = Assessment.objects.filter(aid = assessment_id)
-    #         for a in assessment:
-    #             print(a.qlist)
-    #         del content["assessmentid"]
-    #     print(content)
 
 class ExhibitViewSet(viewsets.ModelViewSet):
     queryset = Exhibit.objects.filter(isdeleted=False).order_by('-created_on')

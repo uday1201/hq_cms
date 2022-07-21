@@ -17,7 +17,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     comments = serializers.JSONField(default=list,read_only=True,required=False)
-    qtype_name = serializers.CharField(max_length=100, default="NA")
+    qtype_name = serializers.CharField(max_length=100, default="NA", read_only=True)
 
 
     class Meta:
@@ -28,33 +28,33 @@ class QuestionSerializer(serializers.ModelSerializer):
         demo = Question.objects.get(pk=instance.id)
         validated_data["last_edited_by"] = self.context['request'].user
 
-        if validated_data.get("cwf"):
+        if validated_data.get("cwf") is not None:
             demo.cwf.set(validated_data["cwf"])
             del validated_data["cwf"]
 
-        if validated_data.get("kt"):
+        if validated_data.get("kt") is not None:
             demo.kt.set(validated_data["kt"])
             del validated_data["kt"]
 
-        if validated_data.get("role"):
+        if validated_data.get("role") is not None:
             demo.role.set(validated_data["role"])
             del validated_data["role"]
 
-        if validated_data.get("assessmentid"):
+        if validated_data.get("assessmentid") is not None:
             demo.assessmentid.set(validated_data["assessmentid"])
             del validated_data["assessmentid"]
 
-        if validated_data.get("exhibits"):
+        if validated_data.get("exhibits")is not None:
             demo.exhibits.set(validated_data["exhibits"])
             del validated_data["exhibits"]
 
-        if validated_data.get("excels"):
+        if validated_data.get("excels") is not None:
             demo.excels.set(validated_data["excels"])
             del validated_data["excels"]
 
-        print(validated_data)
+        #print(validated_data)
         Question.objects.filter(pk=instance.id).update(**validated_data)
-        print(validated_data)
+        #print(validated_data)
         Question.objects.filter(pk=instance.id).update(**validated_data)
         #demo.cwf.add(validated_data["cwf"])
         return demo
