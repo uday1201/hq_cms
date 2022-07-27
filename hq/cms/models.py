@@ -27,7 +27,7 @@ class Assessment(models.Model):
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='assessment_approver') # if the user is deleted it will set this field to NULL
     last_updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
-    assigned_to = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='assessment_assignedto')
+    assigned_to = models.ManyToManyField("User", blank=True, related_name='assessment_assignedto')
     status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)

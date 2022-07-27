@@ -16,12 +16,17 @@ from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission, SAFE_METHODS, AllowAny
 from rest_framework.authtoken.views import ObtainAuthToken
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import authentication_classes, permission_classes
+
 
 
 # token authentication custom oveeride
+@authentication_classes([])
+@permission_classes([])
 class CustomObtainAuthToken(ObtainAuthToken):
-    permission_classes = [AllowAny]
+    permission_classes = []
     def post(self, request, *args, **kwargs):
+        print(request)
         response = super(CustomObtainAuthToken, self).post(request, *args, **kwargs)
         token = Token.objects.get(key=response.data['token'])
         user = token.user
