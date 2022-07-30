@@ -154,19 +154,34 @@ class QuestionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(Q(creator=user["user_id"]) | Q(assessmentid__in=assessments))
 
         if "assessmentid" in request.GET:
-            queryset = queryset.filter(assessmentid= request.GET["assessmentid"]).distinct()
+            # queryset = queryset.filter(assessmentid= request.GET["assessmentid"]).distinct()
+            assessment = self.request.GET.getlist('assessmentid')
+            if assessment:
+                queryset = queryset.filter(assessmentid__in=assessment)
 
         if "cwf" in request.GET:
-            queryset = queryset.filter(cwf=request.GET["cwf"]).distinct()
+            # queryset = queryset.filter(cwf=request.GET["cwf"]).distinct()
+            cwf = self.request.GET.getlist('cfw')
+            if cwf:
+                queryset = queryset.filter(cwf__in=cwf)
 
         if "kt" in request.GET:
-            queryset = queryset.filter(kt=request.GET["kt"]).distinct()
+            # queryset = queryset.filter(kt=request.GET["kt"]).distinct()
+            kt = self.request.GET.get('kt')
+            if kt:
+                queryset = queryset.filter(kt__in=kt)
 
         if "created_by" in request.GET:
-            queryset = queryset.filter(creator = request.GET["created_by"]).distinct()
+            # queryset = queryset.filter(creator = request.GET["created_by"]).distinct()
+            creator = self.request.GET.get('created_by')
+            if creator:
+                queryset = queryset.filter(creator__in=creator)
 
         if "role" in request.GET:
-            queryset = queryset.filter(role=request.GET["role"]).distinct()
+            # queryset = queryset.filter(role=request.GET["role"]).distinct()
+            role = self.request.GET.get('role')
+            if role:
+                queryset = queryset.filter(role__in=role)
 
         if "starttime" in request.GET and "endtime" in request.GET:
             queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
