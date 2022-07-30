@@ -55,7 +55,9 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
+
         user = authenticate_token(self, request)
+        print(user)
         #print(user["user_id"])
         # Admin can view everything
         if user["role"] == "MEMBER":
@@ -127,9 +129,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         queryset = Question.objects.filter(isdeleted=False)
-
+        
         user = authenticate_token(self, request)
         #print(request.GET["assessmentid"])
+        print(request.GET)
+
         # filtering from the user
         assessment_queryset = Assessment.objects.filter(Q(creator=user["user_id"]) | Q(assigned_to=user["user_id"]))
         assessments = []
@@ -140,19 +144,27 @@ class QuestionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(Q(creator=user["user_id"]) | Q(assessmentid__in=assessments))
 
         if "assessmentid" in request.GET:
-            queryset = queryset.filter(assessmentid= request.GET["assessmentid"]).distinct()
+            assessment = self.request.GET.getlist('assessmentid')
+            if assessment:
+                queryset = queryset.filter(assessmentid__in=assessment)
 
         if "cwf" in request.GET:
-            queryset = queryset.filter(cwf=request.GET["cwf"]).distinct()
+            cwf = self.request.GET.getlist('cfw')
+            if cwf:
+                queryset = queryset.filter(cwf__in=cwf)
 
         if "kt" in request.GET:
-            queryset = queryset.filter(kt=request.GET["kt"]).distinct()
+            kt = self.request.GET.get('kt')
+            if kt:
+                queryset = queryset.filter(kt__in=kt)
 
         if "created_by" in request.GET:
             queryset = queryset.filter(creator = request.GET["created_by"]).distinct()
 
         if "role" in request.GET:
-            queryset = queryset.filter(role=request.GET["role"]).distinct()
+            role = self.request.GET.get('role')
+            if role:
+                queryset = queryset.filter(role__in=role)
 
         if "starttime" in request.GET and "endtime" in request.GET:
             queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
