@@ -51,7 +51,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             demo.assessmentid.set(validated_data["assessmentid"])
             del validated_data["assessmentid"]
 
-        if validated_data.get("exhibits")is not None:
+        if validated_data.get("exhibits") is not None:
             demo.exhibits.set(validated_data["exhibits"])
             del validated_data["exhibits"]
 
