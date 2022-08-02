@@ -13,11 +13,18 @@ class AssessmentSerializer(serializers.ModelSerializer):
         model = Assessment
         fields = ['id', 'name','problem_statement','qlist','qorder','role','remarks','creator','approved_by','assigned_to','status','isdeleted']
 
+class AssessmentProdSerializer(serializers.ModelSerializer):
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = AssessmentProd
+        fields = ['id', 'name','problem_statement','qlist','qorder','role','remarks','creator','approved_by','assigned_to','status','isdeleted']
+
 class QuestionSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     comments = serializers.JSONField(default=list,read_only=True,required=False)
     qtype_name = serializers.CharField(max_length=100, default="NA", read_only=True)
+    #qtype_name = serializers.CharField(max_length=100, default="NA", read_only=True)
 
 
     class Meta:
@@ -54,11 +61,14 @@ class QuestionSerializer(serializers.ModelSerializer):
 
         #print(validated_data)
         Question.objects.filter(pk=instance.id).update(**validated_data)
-        #print(validated_data)
-        Question.objects.filter(pk=instance.id).update(**validated_data)
         #demo.cwf.add(validated_data["cwf"])
         return demo
 
+class QuestionProdSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = QuestionProd
+        fields = '__all__'
 
 class RoleSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())

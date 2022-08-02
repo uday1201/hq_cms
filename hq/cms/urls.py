@@ -9,6 +9,8 @@ from django.conf.urls.static import static
 
 router = routers.DefaultRouter()
 router.register(r'Assessment', views.AssessmentViewSet)
+router.register(r'AssessmentProd', views.AssessmentProdViewSet)
+router.register(r'QuestionProd', views.QuestionProdViewSet)
 router.register(r'Question', views.QuestionViewSet)
 router.register(r'Exhibit', views.ExhibitViewSet)
 router.register(r'Role', views.RoleViewSet)
@@ -30,6 +32,7 @@ urlpatterns = [
     path('docs/', include_docs_urls(title='Snippet API')),
     path('api/logout/', views.Logout.as_view(), name='Logout'),
     path('api/CwfKtStage/', views.CwfKtStage.as_view(), name='CwfKtStage'),
+    path('api/CopyQuestion/', views.CopyQuestion.as_view(), name='CopyQuestion'),
     path('api/login/', views.CustomObtainAuthToken.as_view(), name='CustomObtainAuthToken'),
     path('silk/', include('silk.urls', namespace='silk')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

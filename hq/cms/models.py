@@ -7,18 +7,11 @@ from django.contrib.postgres.fields import ArrayField
 
 
 # Create your models here.
-
-class Assessment(models.Model):
-    ASSESSMENT_STATUS_CHOICES = (
-    ("ACTIVE", "Active"),
-    ("ARCHIVED", "Archived"),
-    ("APPROVED", "Approved"),
-    )
-
+class AssessmentProd(models.Model):
     id = models.AutoField(primary_key=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
     name = models.CharField(max_length=100, blank = True)
-    qlist = models.ManyToManyField("Question",blank=True, related_name='assessments')
+    qlist = models.ManyToManyField("QuestionProd",blank=True, related_name='assessments')
     qorder = models.JSONField(default=list, blank=True)
     role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='assessment_role') # if the creator user is deleted it will set this field to NULL
     remarks = models.CharField(max_length=1000, blank = True)
@@ -27,21 +20,71 @@ class Assessment(models.Model):
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='assessment_approver') # if the user is deleted it will set this field to NULL
     last_updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
-    assigned_to = models.ManyToManyField("User", blank=True, related_name='assessment_assignedto')
-    status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "ACTIVE")
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
+
 
     def __str__(self):
         return self.name
 
-class Question(models.Model):
-    STATUS_CHOICES = (
-    ("SAVED", "Saved"),
-    ("UNDERREVIEW", "Under Review"),
-    ("REVIEWED", "Reviewed"),
-    ("ARCHIVED", "Archived"),
+class Assessment(models.Model):
+    ASSESSMENT_STATUS_CHOICES = (
+    ("DEV", "In development"),
+    ("READY", "Ready"),
+    ("PROD", "In Production"),
+    ("UPDATED", "Updated"),
+    ("APPROVED", "Approved"),
+    ("REJECTED", "Rejected"),
+    ("REVIEW", "To be reviewed")
     )
+
+    id = models.AutoField(primary_key=True)
+    problem_statement = models.CharField(max_length=1000, blank = True)
+    name = models.CharField(max_length=100, blank = True)
+    qlist = models.ManyToManyField("Question",blank=True, related_name='devassessments')
+    qorder = models.JSONField(default=list, blank=True)
+    role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='devassessment_role') # if the creator user is deleted it will set this field to NULL
+    remarks = models.CharField(max_length=1000, blank = True)
+    # timestamp and tracking
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='devassessment_creator') # if the creator user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='devassessment_approver') # if the user is deleted it will set this field to NULL
+    last_updated = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    assigned_to = models.ManyToManyField("User", blank=True, related_name='devassessment_assignedto')
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
+    # setting status for the in dev question
+    status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "DEV")
+    # prod question
+    prod = models.ForeignKey("Assessment", on_delete= models.SET_NULL, null=True, blank=True, related_name = "in_dev_assessment")
+
+    # def save(self, *args, **kwargs):
+    #     if self.status == "READY":
+    #         prod_entry = Assessment(
+    #             problem_statement = self.problem_statement,
+    #             name = self.name,
+    #             qlist = self.qlist,
+    #             qorder = self.qorder,
+    #             role = self.role,
+    #             remarks = self.remarks,
+    #             creator = self.creator,
+    #             approved_by = self.approved_by,
+    #             last_updated = self.last_updated,
+    #             created = self.created,
+    #             #assigned_to = self.assigned_to,
+    #             isdeleted = self.isdeleted
+    #         )
+    #         prod_entry.save()
+    #         self.prod = prod_entry.id
+    #         self.status = "PROD"
+    #
+    #     # elif self.status == "REJECTED":
+    #     #     obj = Assessment.objects.filter(id = self.prod)
+    #     super(AssessmentDev, self).save(*args, **kwargs)
+    def __str__(self):
+        return self.name
+
+class QuestionProd(models.Model):
 
     DIFFICULTY_CHOICES = (
     ("EASY", "EASY"),
@@ -54,6 +97,8 @@ class Question(models.Model):
     kt = models.ManyToManyField("Kt",blank=True)
     role = models.ManyToManyField("Role",blank=True)
     stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True, blank=True) # if the stage id is delelted it will set this field to NULL
+    skills =models.ManyToManyField("Skill",blank=True)
+    subskill = models.ManyToManyField("SubSkill",blank=True)
     # assests for the question
     exhibits = models.ManyToManyField("Exhibit", blank=True)
     excels = models.ManyToManyField("Excel", blank=True)
@@ -75,19 +120,85 @@ class Question(models.Model):
     # timestamp and tracking
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='question_creator') # if the creator user is deleted it will set this field to NULL
     approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='question_approver') # if the user is deleted it will set this field to NULL
-    last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
+    #last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
+    #last_edited = models.DateTimeField(auto_now =True)
+    created = models.DateTimeField(auto_now_add =True)
+    # miscellaneous fields
+    idealtime = models.FloatField(blank=True, null=True)
+    difficulty_level = models.CharField(max_length=50, choices=DIFFICULTY_CHOICES, blank=True, null=True, default="MEDIUM")
+    misc = models.JSONField(blank=True, null=True)
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
+    # bidirectional ManyToManyField
+    assessmentid = models.ManyToManyField('AssessmentProd', through = AssessmentProd.qlist.through, blank=True)
+
+    def __str__(self):
+        return str(self.id)
+
+class Question(models.Model):
+    QUESTION_STATUS_CHOICES = (
+    ("DEV", "In development"),
+    ("READY", "Ready"),
+    ("PROD", "In Production"),
+    ("UPDATED", "Updated"),
+    ("APPROVED", "Approved"),
+    ("REJECTED", "Rejected"),
+    ("REVIEW", "To be reviewed")
+    )
+
+    DIFFICULTY_CHOICES = (
+    ("EASY", "EASY"),
+    ("MEDIUM", "MEDIUM"),
+    ("HARD", "HARD"),
+    )
+
+    DERIVATION = (
+    ("MASTER", "Master"),
+    ("DERIVED", "Derived")
+    )
+
+    id = models.AutoField(primary_key=True)
+    # details of the question
+    cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
+    kt = models.ManyToManyField("Kt",blank=True)
+    role = models.ManyToManyField("Role",blank=True)
+    stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True, blank=True) # if the stage id is delelted it will set this field to NULL
+    skills =models.ManyToManyField("Skill",blank=True)
+    subskill = models.ManyToManyField("SubSkill",blank=True)
+    # assests for the question
+    exhibits = models.ManyToManyField("Exhibit", blank=True)
+    excels = models.ManyToManyField("Excel", blank=True)
+    context = models.JSONField(default=list, blank=True)
+    # content of the question
+    text = models.CharField(max_length = 100, blank = False, null = False)
+    qtype = models.ForeignKey("Qtype", on_delete = models.SET_NULL, null=True)
+    options = models.JSONField(blank=True, null=True)
+    score_type = models.CharField(max_length = 10, blank = False, null = False)
+    score_weight = models.FloatField(validators = [MinValueValidator(0)])
+    # extras
+    # timestamp and tracking
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='devquestion_creator') # if the creator user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='devquestion_approver') # if the user is deleted it will set this field to NULL
+    last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='devquestion_editor') # if the user is deleted it will set this field to NULL
     last_edited = models.DateTimeField(auto_now =True)
     created = models.DateTimeField(auto_now_add =True)
     # miscellaneous fields
     idealtime = models.FloatField(blank=True, null=True)
     difficulty_level = models.CharField(max_length=50, choices=DIFFICULTY_CHOICES, blank=True, null=True, default="MEDIUM")
     misc = models.JSONField(blank=True, null=True)
-    # status of the question
-    status = models.CharField(max_length=20, choices = STATUS_CHOICES, default = "SAVED")
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
     # bidirectional ManyToManyField
     assessmentid = models.ManyToManyField('Assessment', through = Assessment.qlist.through, blank=True)
+
+
+    # setting status for the in dev question
+    status = models.CharField(max_length=20, choices = QUESTION_STATUS_CHOICES, default = "DEV")
+    # prod question
+    prod = models.ForeignKey("Assessment", on_delete= models.SET_NULL, null=True, blank=True, related_name = "in_dev_question")
+    # master and derived question
+    derivation = models.CharField(max_length=20, choices = DERIVATION, default = "MASTER")
+    org_ques = models.ForeignKey("Question", on_delete = models.SET_NULL, null=True, blank=True, related_name='original_question')
 
     def __str__(self):
         return str(self.id)
@@ -175,6 +286,23 @@ class Kt(models.Model):
     creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='kt_creator')
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return self.id
+
+class Skill(models.Model):
+    id = models.CharField(max_length = 100, primary_key=True)
+    name = models.CharField(max_length = 255, blank = False, null = False)
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='skill_creator')
+
+    def __str__(self):
+        return self.id
+
+class SubSkill(models.Model):
+    id = models.CharField(max_length = 100, primary_key=True)
+    name = models.CharField(max_length = 255, blank = False, null = False)
+    skill = models.ManyToManyField("Skill")
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='subskill_creator')
 
     def __str__(self):
         return self.id

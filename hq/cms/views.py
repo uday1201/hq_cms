@@ -24,7 +24,6 @@ from rest_framework.decorators import authentication_classes, permission_classes
 @authentication_classes([])
 @permission_classes([])
 class CustomObtainAuthToken(ObtainAuthToken):
-    permission_classes = []
     def post(self, request, *args, **kwargs):
         print(request)
         response = super(CustomObtainAuthToken, self).post(request, *args, **kwargs)
@@ -132,6 +131,14 @@ def get_qtype(queryset):
             q.qtype_name = qtype.name
     return queryset
 
+# function to get related questions
+def related_ques(queryset):
+    # get the qtype name
+    for q in queryset:
+        for rq in Qtype.objects.filter(question = q):
+            q.related_ques = qtype.name
+    return queryset
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.filter(isdeleted=False)
@@ -177,7 +184,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = get_qtype(queryset)
 
         queryset_order = queryset.order_by('-last_edited')
-        serializer = QuestionSerializer(queryset, many=True)
+        serializer = QuestionDevSerializer(queryset, many=True)
         page = self.paginate_queryset(serializer.data)
         return Response(page)
 
@@ -205,11 +212,22 @@ class QuestionViewSet(viewsets.ModelViewSet):
         # get the qtype name
         queryset = get_qtype(queryset)
         if flag:
-            serializer = QuestionSerializer(queryset, many=True)
+            serializer = QuestionDevSerializer(queryset, many=True)
             return Response(serializer.data[0])
         else:
             return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
 
+class AssessmentProdViewSet(viewsets.ModelViewSet):
+    queryset = AssessmentProd.objects.filter(isdeleted=False).order_by('-last_updated')
+    serializer_class = AssessmentProdSerializer
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['get']
+
+class QuestionProdViewSet(viewsets.ModelViewSet):
+    queryset = QuestionProd.objects.filter(isdeleted=False).order_by('-created')
+    serializer_class = QuestionProdSerializer
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['get']
 
 class ExhibitViewSet(viewsets.ModelViewSet):
     queryset = Exhibit.objects.filter(isdeleted=False).order_by('-created_on')
@@ -455,6 +473,67 @@ class CwfKtStage(APIView):
                     stage_array.append({stage.id:stage.name})
             response[role]={"label":label[0]["name"],"wf":cwf_main, "stages":stage_array}
         return Response(response)
+
+
+class CopyQuestion(APIView):
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['post']
+
+    def post(self, request):
+        reqs = request.body.decode('utf-8')
+        valid_data = json.loads(reqs)
+        ques_id = valid_data["qid"]
+        a_id = valid_data["aid"]
+        #replace = valid_data["replace"]
+
+        access_token = request.headers['Authorization'].split(" ")[-1]
+        user=Token.objects.get(key=access_token).user
+
+        org_ques = QuestionDev.objects.filter(id=ques_id)
+
+
+        derived_ques = QuestionDev(
+            stage = valid_data["stage"],
+            context = valid_data["context"],
+            text = valid_data["text"],
+            qtype = valid_data["qtype"],
+            options = valid_data["options"],
+            score_weight = valid_data["score_weight"],
+            # setting the creator and editor as the current user
+            creator = user,
+            last_edited_by = user,
+            idealtime = valid_data["idealtime"],
+            difficulty_level = valid_data["difficulty_level"],
+            misc = valid_data["misc"],
+            # setting the assessment as the current one
+            status = valid_data["status"],
+            # setting it as derived question and original question relationship
+            derivation = "DERIVED",
+            #org_ques = q
+        )
+
+        for q in org_ques:
+            q.assessmentid.remove(a_id)
+            # check if the inherited question is from original
+            if q.derivation == "DERIVED":
+                derived_ques.org_ques = q.org_ques
+            else:
+                derived_ques.org_ques = q
+
+        derived_ques.save()
+        derived_ques.cwf.set(valid_data["cwf"])
+        derived_ques.kt.set(valid_data["kt"])
+        derived_ques.role.set(valid_data["role"])
+        derived_ques.skills.set(valid_data["skills"])
+        derived_ques.subskill.set(valid_data["subskill"])
+        derived_ques.exhibits.set(valid_data["exhibits"])
+        derived_ques.excels.set(valid_data["excels"])
+        derived_ques.assessmentid.set([a_id])
+
+
+        queryset = QuestionDev.objects.filter(id=derived_ques.id)
+        serializer = QuestionDevSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 
