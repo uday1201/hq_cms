@@ -67,15 +67,25 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         else:
             queryset = Assessment.objects.filter(isdeleted=False)
 
-        #print(request.GET)
         if "status" in request.GET:
-            queryset = queryset.filter(status=request.GET["status"]).distinct()
+            status = self.request.GET.get('status')
+            if role:
+                queryset = queryset.filter(status__in=status)
+
+        if "code" in request.GET:
+            code = self.request.GET.get('code')
+            if code:
+                queryset = queryset.filter(code__in=code)
 
         if "created_by" in request.GET:
-            queryset = queryset.filter(creator = request.headers["created_by"]).distinct()
+            created_by = self.request.GET.get('created_by')
+            if role:
+                queryset = queryset.filter(created_by__in=created_by)
 
         if "role" in request.GET:
-            queryset = queryset.filter(role=request.GET["role"]).distinct()
+            role = self.request.GET.get('role')
+            if role:
+                queryset = queryset.filter(role__in=role)
 
         if "starttime" in request.GET and "endtime" in request.GET:
             queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
@@ -110,7 +120,6 @@ def get_comments(queryset):
     for q in queryset:
         comments = []
         for comment in Comment.objects.filter(question = q).order_by('-last_updated_on'):
-            print(comment)
             comments.append(
                 {
                     "id" : comment.id,
@@ -119,7 +128,6 @@ def get_comments(queryset):
                     "date_posted": comment.date_posted
                 }
             )
-        print(comments)
         q.comments = comments
     return queryset
 
@@ -127,21 +135,29 @@ def get_comments(queryset):
 def get_qtype(queryset):
     # get the qtype name
     for q in queryset:
-        for qtype in Qtype.objects.filter(question = q):
+        for qtype in Qtype.objects.filter(qtype_id = q.qtype.qtype_id):
             q.qtype_name = qtype.name
     return queryset
 
 # function to get related questions
-def related_ques(queryset):
-    # get the qtype name
+def related_questions(queryset):
     for q in queryset:
-        for rq in Qtype.objects.filter(question = q):
-            q.related_ques = qtype.name
+        if q.derivation == "DERIVED":
+            q.related_ques = [q.org_ques.id]
+            # return siblings too
+        else:
+            rlist = []
+            rqs = Question.objects.filter(org_ques=q.id)
+            for rq in rqs:
+                rlist.append(rq.id)
+            q.related_ques = rlist
+        print("uuu",q.related_ques)
     return queryset
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.filter(isdeleted=False)
+    queryset = queryset.order_by('-last_edited')
     serializer_class = QuestionSerializer
     pagination_class = QuestionSetPagination
     permission_classes = (IsAuthenticated,)
@@ -150,7 +166,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = Question.objects.filter(isdeleted=False)
 
         user = authenticate_token(self, request)
-        #print(request.GET["assessmentid"])
         # filtering from the user
         assessment_queryset = Assessment.objects.filter(Q(creator=user["user_id"]) | Q(assigned_to=user["user_id"]))
         assessments = []
@@ -168,7 +183,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         if "cwf" in request.GET:
             # queryset = queryset.filter(cwf=request.GET["cwf"]).distinct()
-            cwf = self.request.GET.getlist('cfw')
+            cwf = self.request.GET.getlist('cwf')
             if cwf:
                 queryset = queryset.filter(cwf__in=cwf)
 
@@ -190,6 +205,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
             if role:
                 queryset = queryset.filter(role__in=role)
 
+        if "code" in request.GET:
+            code = self.request.GET.get('code')
+            if code:
+                queryset = queryset.filter(code__in=code)
+
         if "starttime" in request.GET and "endtime" in request.GET:
             queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
 
@@ -197,9 +217,14 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = get_comments(queryset)
         # get the qtype name
         queryset = get_qtype(queryset)
-
-        queryset_order = queryset.order_by('-last_edited')
-        serializer = QuestionDevSerializer(queryset, many=True)
+        # get the related questions
+        queryset = related_questions(queryset)
+        # realted question filter
+        if "related_ques" in request.GET:
+            related_ques = self.request.GET.get('related_ques')
+            if related_ques:
+                queryset = queryset.filter(related_ques__in=related_ques)
+        serializer = QuestionSerializer(queryset, many=True)
         page = self.paginate_queryset(serializer.data)
         return Response(page)
 
@@ -226,8 +251,10 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = get_comments(queryset)
         # get the qtype name
         queryset = get_qtype(queryset)
+        # get the related questions
+        queryset = related_questions(queryset)
         if flag:
-            serializer = QuestionDevSerializer(queryset, many=True)
+            serializer = QuestionSerializer(queryset, many=True)
             return Response(serializer.data[0])
         else:
             return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
@@ -494,24 +521,31 @@ class CopyQuestion(APIView):
     permission_classes = (IsAuthenticated,)
     http_method_names = ['post']
 
+#request -  {
+#   copyQuestion: JSON-copyQuestion,
+#   assessmentId: assessmentId,
+#   questionId: params.questionId,
+# }
     def post(self, request):
         reqs = request.body.decode('utf-8')
-        valid_data = json.loads(reqs)
-        ques_id = valid_data["qid"]
-        a_id = valid_data["aid"]
-        #replace = valid_data["replace"]
+        data = json.loads(reqs)
+        ques_id = data["questionId"]
+        if "assessmentId" in data:
+            a_id = data["assessmentId"]
+        valid_data = data["copyQuestion"]
 
         access_token = request.headers['Authorization'].split(" ")[-1]
         user=Token.objects.get(key=access_token).user
 
-        org_ques = QuestionDev.objects.filter(id=ques_id)
+        org_ques = Question.objects.filter(id=ques_id)
 
 
-        derived_ques = QuestionDev(
-            stage = valid_data["stage"],
+        derived_ques = Question(
+            code = valid_data["code"],
+            #stage = valid_data["stage"],
             context = valid_data["context"],
             text = valid_data["text"],
-            qtype = valid_data["qtype"],
+            #qtype = valid_data["qtype"],
             options = valid_data["options"],
             score_weight = valid_data["score_weight"],
             # setting the creator and editor as the current user
@@ -527,8 +561,17 @@ class CopyQuestion(APIView):
             #org_ques = q
         )
 
+        if valid_data["qtype"] is not None:
+            for q in Qtype.objects.filter(qtype_id=valid_data["qtype"]):
+                derived_ques.qtype = q
+
+        if valid_data["stage"] is not None:
+            for s in Stage.objects.filter(id=valid_data["stage"]):
+                derived_ques.stage = s
+
         for q in org_ques:
-            q.assessmentid.remove(a_id)
+            if "assessmentId" in data:
+                q.assessmentid.remove(a_id)
             # check if the inherited question is from original
             if q.derivation == "DERIVED":
                 derived_ques.org_ques = q.org_ques
@@ -543,12 +586,203 @@ class CopyQuestion(APIView):
         derived_ques.subskill.set(valid_data["subskill"])
         derived_ques.exhibits.set(valid_data["exhibits"])
         derived_ques.excels.set(valid_data["excels"])
-        derived_ques.assessmentid.set([a_id])
 
+        if "assessmentId" in data:
+            derived_ques.assessmentid.set([a_id])
 
-        queryset = QuestionDev.objects.filter(id=derived_ques.id)
-        serializer = QuestionDevSerializer(queryset, many=True)
+            for a in Assessment.objects.filter(id=a_id):
+                qlist = a.qorder
+                if ques_id in qlist:
+                    qlist[qlist.index(ques_id)] = derived_ques.id
+                else:
+                    qlist.append(derived_ques.id)
+                a.qorder = qlist
+                a.save()
+
+        queryset = Question.objects.filter(id=derived_ques.id)
+        serializer = QuestionSerializer(queryset, many=True)
         return Response(serializer.data)
+
+class MoveToProd(APIView):
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['post']
+
+
+    def post(self, request):
+        reqs = request.body.decode('utf-8')
+        data = json.loads(reqs)
+
+        access_token = request.headers['Authorization'].split(" ")[-1]
+        user=Token.objects.get(key=access_token).user
+
+        response = {}
+
+        if "assessmentId" in data:
+            aid = data["assessmentId"]
+
+            for a in Assessment.objects.filter(id=aid):
+                if a.status == "READY":
+                    prod_entry = AssessmentProd(
+                        code = a.code,
+                        problem_statement = a.problem_statement,
+                        name = a.name,
+                        # how to connect qlist dev to prod
+                        #qlist = a.qlist,
+                        qorder = a.qorder,
+                        role = a.role,
+                        remarks = a.remarks,
+                        creator = a.creator,
+                        approved_by = a.approved_by,
+                        #assigned_to = self.assigned_to,
+                        isdeleted = a.isdeleted
+                    )
+                    prod_entry.save()
+
+                    prod_entry.qlist.set(a.qlist)
+
+                    a.prod = prod_entry.id
+                    a.status = "PROD"
+                    a.save()
+
+                    response["Prod Assessment id"] = prod_entry.id
+
+                elif a.status == "APPROVED":
+                    for prod in AssessmentProd.objects.filter(id = a.prod):
+                        prod.code = a.code
+                        prod.problem_statement = a.problem_statement,
+                        prod.name = a.name,
+                        # how to connect qlist dev to prod
+                        #prod.qlist = a.qlist,
+                        prod.qorder = a.qorder,
+                        prod.role = a.role,
+                        prod.remarks = a.remarks,
+                        prod.creator = a.creator,
+                        prod.approved_by = a.approved_by,
+                        #assigned_to = self.assigned_to,
+                        prod.isdeleted = a.isdeleted
+
+                        prod.qlist.set(a.qlist)
+
+                        prod.save()
+
+                        response["Prod Assessment id"] = prod.id
+
+                elif a.status == "REJECTED":
+                    for prod in AssessmentProd.objects.filter(id = a.prod):
+                        a.code = prod.code
+                        a.problem_statement = prod.problem_statement,
+                        a.name = prod.name,
+                        # how to connect qlist dev to prod
+                        a.qlist = prod.qlist,
+                        a.qorder = prod.qorder,
+                        a.role = prod.role,
+                        a.remarks = prod.remarks,
+                        a.creator = prod.creator,
+                        a.approved_by = prod.approved_by,
+                        #assigned_to = self.assigned_to,
+                        a.isdeleted = prod.isdeleted
+
+                        a.qlist.set(prod.qlist)
+
+                        a.save()
+
+                        response["Dev revert Assessment id"] = a.id
+
+
+        if "questionId" in data:
+            ques_id = data["questionId"]
+
+            for q in Question.objects.filter(id=ques_id):
+                if q.status == "READY":
+                    prod = QuestionProd(
+                        code = q.code,
+                        context = q.context,
+                        text = q.text,
+                        options = q.options,
+                        score_weight = q.score_weight,
+                        creator = user,
+                        idealtime = q.idealtime,
+                        difficulty_level = q.difficulty_level,
+                        misc = q.misc,
+                        status = q.status,
+                        qtype = q.qtype,
+                        stage = q.stage
+                    )
+
+                    prod.save()
+                    prod.cwf.set(q.cwf)
+                    prod.kt.set(q.kt)
+                    prod.role.set(q.role)
+                    prod.skills.set(q.skills)
+                    prod.subskill.set(q.subskill)
+                    prod.exhibits.set(q.exhibits)
+                    prod.excels.set(q.excels)
+                    # assessment id
+                    prod.assessmentid.set(q.assessmentid)
+
+                    response["Prod Question id"] = prod.id
+
+                elif a.status == "APPROVED":
+                    for prod in AssessmentProd.objects.filter(id = a.prod):
+                        prod.code = q.code
+                        prod.context = q.context
+                        prod.text = q.text
+                        prod.options = q.options
+                        prod.score_weight = q.score_weight
+                        prod.creator = user
+                        prod.idealtime = q.idealtime
+                        prod.difficulty_level = q.difficulty_level
+                        prod.misc = q.misc
+                        prod.status = q.status
+                        prod.qtype = q.qtype
+                        prod.stage = q.stag
+
+                        prod.cwf.set(q.cwf)
+                        prod.kt.set(q.kt)
+                        prod.role.set(q.role)
+                        prod.skills.set(q.skills)
+                        prod.subskill.set(q.subskill)
+                        prod.exhibits.set(q.exhibits)
+                        prod.excels.set(q.excels)
+                        # assessment id
+                        prod.assessmentid.set(q.assessmentid)
+
+                        prod.save()
+
+                        response["Prod Question id"] = prod.id
+
+                elif a.status == "REJECTED":
+                    for prod in AssessmentProd.objects.filter(id = a.prod):
+                        q.code = prod.code
+                        q.context = prod.context
+                        q.text = prod.text
+                        q.options = prod.options
+                        q.score_weight = prod.score_weight
+                        q.creator = user
+                        q.idealtime = prod.idealtime
+                        q.difficulty_level = prod.difficulty_level
+                        q.misc = prod.misc
+                        q.status = prod.status
+                        q.qtype = prod.qtype
+                        q.stage = prod.stag
+
+                        q.cwf.set(prod.cwf)
+                        q.kt.set(prod.kt)
+                        q.role.set(prod.role)
+                        q.skills.set(prod.skills)
+                        q.subskill.set(prod.subskill)
+                        q.exhibits.set(prod.exhibits)
+                        q.excels.set(prod.excels)
+                        # assessment id
+                        q.assessmentid.set(prod.assessmentid)
+
+                        q.save()
+
+                        response["Dev revert Question id"] = q.id
+
+        return Response(response)
+
+
 
 
 

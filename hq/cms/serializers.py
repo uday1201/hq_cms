@@ -24,12 +24,12 @@ class QuestionSerializer(serializers.ModelSerializer):
     last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
     comments = serializers.JSONField(default=list,read_only=True,required=False)
     qtype_name = serializers.CharField(max_length=100, default="NA", read_only=True)
-    #qtype_name = serializers.CharField(max_length=100, default="NA", read_only=True)
+    related_ques = serializers.JSONField(default=list,read_only=True,required=False)
 
 
     class Meta:
         model = Question
-        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','qtype_name','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','idealtime','isdeleted','assessmentid','misc','comments']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','qtype_name','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','derivation','org_ques','idealtime','isdeleted','assessmentid','misc','comments','related_ques']
 
     def update(self, instance, validated_data):
         demo = Question.objects.get(pk=instance.id)

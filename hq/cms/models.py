@@ -9,6 +9,7 @@ from django.contrib.postgres.fields import ArrayField
 # Create your models here.
 class AssessmentProd(models.Model):
     id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length=20, unique=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
     name = models.CharField(max_length=100, blank = True)
     qlist = models.ManyToManyField("QuestionProd",blank=True, related_name='assessments')
@@ -39,6 +40,7 @@ class Assessment(models.Model):
     )
 
     id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length=20, unique=True)
     problem_statement = models.CharField(max_length=1000, blank = True)
     name = models.CharField(max_length=100, blank = True)
     qlist = models.ManyToManyField("Question",blank=True, related_name='devassessments')
@@ -58,29 +60,6 @@ class Assessment(models.Model):
     # prod question
     prod = models.ForeignKey("Assessment", on_delete= models.SET_NULL, null=True, blank=True, related_name = "in_dev_assessment")
 
-    # def save(self, *args, **kwargs):
-    #     if self.status == "READY":
-    #         prod_entry = Assessment(
-    #             problem_statement = self.problem_statement,
-    #             name = self.name,
-    #             qlist = self.qlist,
-    #             qorder = self.qorder,
-    #             role = self.role,
-    #             remarks = self.remarks,
-    #             creator = self.creator,
-    #             approved_by = self.approved_by,
-    #             last_updated = self.last_updated,
-    #             created = self.created,
-    #             #assigned_to = self.assigned_to,
-    #             isdeleted = self.isdeleted
-    #         )
-    #         prod_entry.save()
-    #         self.prod = prod_entry.id
-    #         self.status = "PROD"
-    #
-    #     # elif self.status == "REJECTED":
-    #     #     obj = Assessment.objects.filter(id = self.prod)
-    #     super(AssessmentDev, self).save(*args, **kwargs)
     def __str__(self):
         return self.name
 
@@ -92,6 +71,7 @@ class QuestionProd(models.Model):
     ("HARD", "HARD"),
     )
     id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length=20, unique=True)
     # details of the question
     cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
     kt = models.ManyToManyField("Kt",blank=True)
@@ -158,6 +138,7 @@ class Question(models.Model):
     )
 
     id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length=20, unique=True)
     # details of the question
     cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
     kt = models.ManyToManyField("Kt",blank=True)
@@ -323,7 +304,6 @@ class Stage(models.Model):
 class Qtype(models.Model):
     qtype_id = models.AutoField(primary_key=True)
     code = models.CharField(max_length = 100, unique=True, blank = False, null = False)
-#     code = models.CharField(max_length = 100, primary_key=True)
     name = models.CharField(max_length = 255, blank = False, null = False)
 
     def __str__(self):
