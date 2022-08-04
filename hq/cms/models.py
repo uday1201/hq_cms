@@ -57,8 +57,8 @@ class Assessment(models.Model):
     isdeleted = models.BooleanField(blank=True, default=False)
     # setting status for the in dev question
     status = models.CharField(max_length=20, choices = ASSESSMENT_STATUS_CHOICES, default = "DEV")
-    # prod question
-    prod = models.ForeignKey("Assessment", on_delete= models.SET_NULL, null=True, blank=True, related_name = "in_dev_assessment")
+    # prod assessment
+    prod = models.ForeignKey("AssessmentProd", on_delete= models.SET_NULL, null=True, blank=True, related_name = "prod_assessment")
 
     def __str__(self):
         return self.name
@@ -110,7 +110,8 @@ class QuestionProd(models.Model):
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
     # bidirectional ManyToManyField
-    assessmentid = models.ManyToManyField('AssessmentProd', through = AssessmentProd.qlist.through, blank=True)
+    assessmentiddev = models.ManyToManyField('Assessment', blank=True)
+    assessmentidprod = models.ManyToManyField('AssessmentProd', through = AssessmentProd.qlist.through, blank=True)
 
     def __str__(self):
         return str(self.id)
@@ -176,7 +177,7 @@ class Question(models.Model):
     # setting status for the in dev question
     status = models.CharField(max_length=20, choices = QUESTION_STATUS_CHOICES, default = "DEV")
     # prod question
-    prod = models.ForeignKey("Assessment", on_delete= models.SET_NULL, null=True, blank=True, related_name = "in_dev_question")
+    prodques = models.ForeignKey("QuestionProd", on_delete= models.SET_NULL, null=True, blank=True, related_name = "prod_question")
     # master and derived question
     derivation = models.CharField(max_length=20, choices = DERIVATION, default = "MASTER")
     org_ques = models.ForeignKey("Question", on_delete = models.SET_NULL, null=True, blank=True, related_name='original_question')

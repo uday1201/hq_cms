@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/logout/', views.Logout.as_view(), name='Logout'),
     path('api/CwfKtStage/', views.CwfKtStage.as_view(), name='CwfKtStage'),
     path('api/CopyQuestion/', views.CopyQuestion.as_view(), name='CopyQuestion'),
+    path('api/MoveToProd/', views.MoveToProd.as_view(), name='MoveToProd'),
     path('api/login/', views.CustomObtainAuthToken.as_view(), name='CustomObtainAuthToken'),
     path('silk/', include('silk.urls', namespace='silk')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

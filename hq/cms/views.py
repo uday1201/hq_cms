@@ -628,7 +628,7 @@ class MoveToProd(APIView):
                         name = a.name,
                         # how to connect qlist dev to prod
                         #qlist = a.qlist,
-                        qorder = a.qorder,
+                        #qorder = a.qorder,
                         role = a.role,
                         remarks = a.remarks,
                         creator = a.creator,
@@ -636,11 +636,29 @@ class MoveToProd(APIView):
                         #assigned_to = self.assigned_to,
                         isdeleted = a.isdeleted
                     )
+
                     prod_entry.save()
 
-                    prod_entry.qlist.set(a.qlist)
+                    #setting qlist to prod questions only
+                    dev_qlist = a.qlist.all()
+                    prod_qlist = []
+                    for q in dev_qlist:
+                        if q.status == "PROD":
+                            prod_qlist.append(q.prodques)
+                    prod_entry.qlist.set(prod_qlist)
 
-                    a.prod = prod_entry.id
+                    # setting qorder
+                    prod_order = []
+                    for o in a.qorder:
+                        for oq in Question.objects.filter(id=o):
+                            if oq.prodques is not None:
+                                if oq.prodques in prod_qlist:
+                                    prod_order.append(oq.prodques.id)
+                    prod_entry.qorder = prod_order
+                    prod_entry.save()
+
+                    # setting the prod question
+                    a.prod = prod_entry
                     a.status = "PROD"
                     a.save()
 
@@ -653,7 +671,7 @@ class MoveToProd(APIView):
                         prod.name = a.name,
                         # how to connect qlist dev to prod
                         #prod.qlist = a.qlist,
-                        prod.qorder = a.qorder,
+                        #prod.qorder = a.qorder,
                         prod.role = a.role,
                         prod.remarks = a.remarks,
                         prod.creator = a.creator,
@@ -661,9 +679,29 @@ class MoveToProd(APIView):
                         #assigned_to = self.assigned_to,
                         prod.isdeleted = a.isdeleted
 
-                        prod.qlist.set(a.qlist)
+                        #setting qlist to prod questions only
+                        dev_qlist = a.qlist.all()
+                        prod_qlist = []
+                        for q in dev_qlist:
+                            if q.status == "PROD":
+                                prod_qlist.append(q.prodques)
+                        prod.qlist.set(prod_qlist)
+
+                        # setting qorder
+                        prod_order = []
+                        for o in a.qorder:
+                            for oq in Question.objects.filter(id=o):
+                                if oq.prodques is not None:
+                                    if oq.prodques in prod_qlist:
+                                        prod_order.append(oq.prodques.id)
+                        prod.qorder = prod_order
 
                         prod.save()
+
+                        # setting the prod question
+                        a.prod = prod
+                        a.status = "PROD"
+                        a.save()
 
                         response["Prod Assessment id"] = prod.id
 
@@ -674,7 +712,7 @@ class MoveToProd(APIView):
                         a.name = prod.name,
                         # how to connect qlist dev to prod
                         a.qlist = prod.qlist,
-                        a.qorder = prod.qorder,
+                        #a.qorder = prod.qorder,
                         a.role = prod.role,
                         a.remarks = prod.remarks,
                         a.creator = prod.creator,
@@ -682,11 +720,30 @@ class MoveToProd(APIView):
                         #assigned_to = self.assigned_to,
                         a.isdeleted = prod.isdeleted
 
-                        a.qlist.set(prod.qlist)
+                        #reverting qlist from prod questions
+                        dev_qlist = []
+                        prod_qlist = prod.qlist.all()
+                        for q in prod_qlist:
+                            for qid in Question.objects.filter(prodques=q):
+                                dev_qlist.append(qid.id)
+                        a.qlist.set(dev_qlist)
 
+                        # setting qorder
+                        dev_order = []
+                        for o in prod.qorder:
+                            for oq in Question.objects.filter(prodques=o):
+                                if oq is not None:
+                                    if oq in dev_qlist:
+                                        dev_order.append(oq.id)
+                        a.qorder = dev_order
                         a.save()
 
                         response["Dev revert Assessment id"] = a.id
+
+                else:
+                    return Response({"failure": "Status not apropriate for the transaction"},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
         if "questionId" in data:
@@ -704,25 +761,39 @@ class MoveToProd(APIView):
                         idealtime = q.idealtime,
                         difficulty_level = q.difficulty_level,
                         misc = q.misc,
-                        status = q.status,
                         qtype = q.qtype,
                         stage = q.stage
                     )
 
                     prod.save()
-                    prod.cwf.set(q.cwf)
-                    prod.kt.set(q.kt)
-                    prod.role.set(q.role)
-                    prod.skills.set(q.skills)
-                    prod.subskill.set(q.subskill)
-                    prod.exhibits.set(q.exhibits)
-                    prod.excels.set(q.excels)
+                    prod.cwf.set(q.cwf.all())
+                    prod.kt.set(q.kt.all())
+                    prod.role.set(q.role.all())
+                    prod.skills.set(q.skills.all())
+                    prod.subskill.set(q.subskill.all())
+                    prod.exhibits.set(q.exhibits.all())
+                    prod.excels.set(q.excels.all())
+
                     # assessment id
-                    prod.assessmentid.set(q.assessmentid)
+                    prod.assessmentiddev.set(q.assessmentid.all())
+                    prod_ass = []
+                    for ass in prod.assessmentiddev.all():
+                        for a in Assessment.objects.filter(id=ass.id):
+                            if a.status == "PROD":
+                                prod_ass.append(a.prod)
+                    prod.assessmentidprod.set(prod_ass)
+
+                    # setting prod question
+                    q.prodques = prod
+
+                    # setting the dev question to prod
+                    q.status = "PROD"
+
+                    q.save()
 
                     response["Prod Question id"] = prod.id
 
-                elif a.status == "APPROVED":
+                elif q.status == "APPROVED":
                     for prod in AssessmentProd.objects.filter(id = a.prod):
                         prod.code = q.code
                         prod.context = q.context
@@ -733,25 +804,38 @@ class MoveToProd(APIView):
                         prod.idealtime = q.idealtime
                         prod.difficulty_level = q.difficulty_level
                         prod.misc = q.misc
-                        prod.status = q.status
                         prod.qtype = q.qtype
                         prod.stage = q.stag
 
-                        prod.cwf.set(q.cwf)
-                        prod.kt.set(q.kt)
-                        prod.role.set(q.role)
-                        prod.skills.set(q.skills)
-                        prod.subskill.set(q.subskill)
-                        prod.exhibits.set(q.exhibits)
-                        prod.excels.set(q.excels)
+                        prod.cwf.set(q.cwf.all())
+                        prod.kt.set(q.kt.all())
+                        prod.role.set(q.role.all())
+                        prod.skills.set(q.skills.all())
+                        prod.subskill.set(q.subskill.all())
+                        prod.exhibits.set(q.exhibits.all())
+                        prod.excels.set(q.excels.all())
+
                         # assessment id
-                        prod.assessmentid.set(q.assessmentid)
+                        prod.assessmentiddev.set(q.assessmentid.all())
+                        prod_ass = []
+                        for ass in prod.assessmentiddev.all():
+                            for a in Assessment.objects.filter(id=ass.id):
+                                if a.status == "PROD":
+                                    prod_ass.append(a.prod)
+                        prod.assessmentidprod.set(prod_ass)
+
+                        # setting prod question
+                        q.prodques = prod
+
+                        # setting the dev question to prod
+                        q.status = "PROD"
 
                         prod.save()
+                        q.save()
 
                         response["Prod Question id"] = prod.id
 
-                elif a.status == "REJECTED":
+                elif q.status == "REJECTED":
                     for prod in AssessmentProd.objects.filter(id = a.prod):
                         q.code = prod.code
                         q.context = prod.context
@@ -766,19 +850,26 @@ class MoveToProd(APIView):
                         q.qtype = prod.qtype
                         q.stage = prod.stag
 
-                        q.cwf.set(prod.cwf)
-                        q.kt.set(prod.kt)
-                        q.role.set(prod.role)
-                        q.skills.set(prod.skills)
-                        q.subskill.set(prod.subskill)
-                        q.exhibits.set(prod.exhibits)
-                        q.excels.set(prod.excels)
+                        q.cwf.set(prod.cwf.all())
+                        q.kt.set(prod.kt.all())
+                        q.role.set(prod.role.all())
+                        q.skills.set(prod.skills.all())
+                        q.subskill.set(prod.subskill.all())
+                        q.exhibits.set(prod.exhibits.all())
+                        q.excels.set(prod.excels.all())
                         # assessment id
-                        q.assessmentid.set(prod.assessmentid)
+                        q.assessmentid.set(prod.assessmentiddev.all())
 
                         q.save()
 
+                        # setting the dev question to prod
+                        q.status = "To be reviewed"
+
                         response["Dev revert Question id"] = q.id
+
+                    else:
+                        return Response({"failure": "Status not apropriate for the transaction"},
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(response)
 
