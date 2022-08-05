@@ -11,6 +11,8 @@ router = routers.DefaultRouter()
 router.register(r'Assessment', views.AssessmentViewSet)
 router.register(r'AssessmentProd', views.AssessmentProdViewSet)
 router.register(r'QuestionProd', views.QuestionProdViewSet)
+router.register(r'AssessmentFinal', views.AssessmentFinalViewSet)
+router.register(r'QuestionFinal', views.QuestionFinalViewSet)
 router.register(r'Question', views.QuestionViewSet)
 router.register(r'Exhibit', views.ExhibitViewSet)
 router.register(r'Role', views.RoleViewSet)
@@ -35,6 +37,7 @@ urlpatterns = [
     path('api/CopyQuestion/', views.CopyQuestion.as_view(), name='CopyQuestion'),
     path('api/MoveToProd/', views.MoveToProd.as_view(), name='MoveToProd'),
     path('api/MigrateDBProd/', views.MigrateDBProd.as_view(), name='MigrateDBProd'),
+    path('api/MoveToFinal/', views.MoveToFinal.as_view(), name='MoveToFinal'),
     path('api/login/', views.CustomObtainAuthToken.as_view(), name='CustomObtainAuthToken'),
     path('silk/', include('silk.urls', namespace='silk')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
