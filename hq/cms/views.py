@@ -17,8 +17,8 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermiss
 from rest_framework.authtoken.views import ObtainAuthToken
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import authentication_classes, permission_classes
-
-
+import subprocess
+import os
 
 # token authentication custom oveeride
 @authentication_classes([])
@@ -874,8 +874,23 @@ class MoveToProd(APIView):
         return Response(response)
 
 
+class MigrateDBProd(APIView):
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['post']
 
 
+    def post(self, request):
+        reqs = request.body.decode('utf-8')
+        data = json.loads(reqs)
+
+        access_token = request.headers['Authorization'].split(" ")[-1]
+        user=Token.objects.get(key=access_token).user
+
+        if user.access_role == 'ADMIN':
+            out = os.system('bash migrate.sh')
+            return Response({"Success":out},status=status.HTTP_200_OK)
+        else:
+            return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
 
 class SnippetViewSet(viewsets.ModelViewSet):
     """
