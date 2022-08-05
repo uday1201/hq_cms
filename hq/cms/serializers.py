@@ -17,7 +17,13 @@ class AssessmentProdSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = AssessmentProd
-        fields = ['id', 'name','problem_statement','qlist','qorder','role','remarks','creator','approved_by','assigned_to','status','isdeleted']
+        fields = '__all__'
+
+class AssessmentFinalSerializer(serializers.ModelSerializer):
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = AssessmentFinal
+        fields = '__all__'
 
 class QuestionSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -68,6 +74,12 @@ class QuestionProdSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuestionProd
+        fields = '__all__'
+
+class QuestionFinalSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = QuestionFinal
         fields = '__all__'
 
 class RoleSerializer(serializers.ModelSerializer):

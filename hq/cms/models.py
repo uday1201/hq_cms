@@ -7,6 +7,28 @@ from django.contrib.postgres.fields import ArrayField
 
 
 # Create your models here.
+class AssessmentFinal(models.Model):
+    id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length=20, unique=True)
+    problem_statement = models.CharField(max_length=1000, blank = True)
+    name = models.CharField(max_length=100, blank = True)
+    qlist = models.ManyToManyField("Questionfinal",blank=True, related_name='finalassessments')
+    qorder = models.JSONField(default=list, blank=True)
+    role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='finalassessment_role') # if the creator user is deleted it will set this field to NULL
+    remarks = models.CharField(max_length=1000, blank = True)
+    # timestamp and tracking
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='finalassessment_creator') # if the creator user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='finalassessment_approver') # if the user is deleted it will set this field to NULL
+    last_updated = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
+
+
+    def __str__(self):
+        return self.name
+
+
 class AssessmentProd(models.Model):
     id = models.AutoField(primary_key=True)
     code = models.CharField(max_length=20, unique=True)
@@ -14,15 +36,18 @@ class AssessmentProd(models.Model):
     name = models.CharField(max_length=100, blank = True)
     qlist = models.ManyToManyField("QuestionProd",blank=True, related_name='assessments')
     qorder = models.JSONField(default=list, blank=True)
-    role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='assessment_role') # if the creator user is deleted it will set this field to NULL
+    role = models.ForeignKey("Role", on_delete = models.SET_NULL, null=True, related_name='prodassessment_role') # if the creator user is deleted it will set this field to NULL
     remarks = models.CharField(max_length=1000, blank = True)
     # timestamp and tracking
-    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='assessment_creator') # if the creator user is deleted it will set this field to NULL
-    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='assessment_approver') # if the user is deleted it will set this field to NULL
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='prodassessment_creator') # if the creator user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True,related_name='prodassessment_approver') # if the user is deleted it will set this field to NULL
     last_updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
     # deleted field
     isdeleted = models.BooleanField(blank=True, default=False)
+    # final assessment
+    final = models.ForeignKey("AssessmentFinal", on_delete= models.SET_NULL, null=True, blank=True, related_name = "final_assessment")
+
 
 
     def __str__(self):
@@ -62,6 +87,58 @@ class Assessment(models.Model):
 
     def __str__(self):
         return self.name
+
+class QuestionFinal(models.Model):
+
+    DIFFICULTY_CHOICES = (
+    ("EASY", "EASY"),
+    ("MEDIUM", "MEDIUM"),
+    ("HARD", "HARD"),
+    )
+    id = models.AutoField(primary_key=True)
+    code = models.CharField(max_length=20, unique=True)
+    # details of the question
+    cwf = models.ManyToManyField("Cwf",blank=True) # for ManyToManyField Django will automatically create a table to manage to manage many-to-many relationships
+    kt = models.ManyToManyField("Kt",blank=True)
+    role = models.ManyToManyField("Role",blank=True)
+    stage = models.ForeignKey("Stage", on_delete = models.SET_NULL, null=True, blank=True) # if the stage id is delelted it will set this field to NULL
+    skills =models.ManyToManyField("Skill",blank=True)
+    subskill = models.ManyToManyField("SubSkill",blank=True)
+    # assests for the question
+    exhibits = models.ManyToManyField("Exhibit", blank=True)
+    excels = models.ManyToManyField("Excel", blank=True)
+    # context = ArrayField(
+    #         models.JSONField(blank=True, null=True),
+    #         size=10,
+    #         blank=True,
+    #         null=True
+    #     )
+    context = models.JSONField(default=list, blank=True)
+    # content of the question
+    text = models.CharField(max_length = 100, blank = False, null = False)
+    qtype = models.ForeignKey("Qtype", on_delete = models.SET_NULL, null=True)
+    options = models.JSONField(blank=True, null=True)
+    score_type = models.CharField(max_length = 10, blank = False, null = False)
+    score_weight = models.FloatField(validators = [MinValueValidator(0)])
+    # extras
+    # resources = models.JSONField(blank=True, null=True)
+    # timestamp and tracking
+    creator = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, related_name='finalquestion_creator') # if the creator user is deleted it will set this field to NULL
+    approved_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank =True, related_name='finalquestion_approver') # if the user is deleted it will set this field to NULL
+    #last_edited_by = models.ForeignKey("User", on_delete = models.SET_NULL, null=True, blank=True, related_name='question_editor') # if the user is deleted it will set this field to NULL
+    #last_edited = models.DateTimeField(auto_now =True)
+    created = models.DateTimeField(auto_now_add =True)
+    # miscellaneous fields
+    idealtime = models.FloatField(blank=True, null=True)
+    difficulty_level = models.CharField(max_length=50, choices=DIFFICULTY_CHOICES, blank=True, null=True, default="MEDIUM")
+    misc = models.JSONField(blank=True, null=True)
+    # deleted field
+    isdeleted = models.BooleanField(blank=True, default=False)
+    # bidirectional ManyToManyField
+    assessmentidfinal = models.ManyToManyField('AssessmentFinal', through = AssessmentFinal.qlist.through, blank=True)
+
+    def __str__(self):
+        return str(self.id)
 
 class QuestionProd(models.Model):
 
@@ -112,6 +189,8 @@ class QuestionProd(models.Model):
     # bidirectional ManyToManyField
     assessmentiddev = models.ManyToManyField('Assessment', blank=True)
     assessmentidprod = models.ManyToManyField('AssessmentProd', through = AssessmentProd.qlist.through, blank=True)
+    # final question
+    finalques = models.ForeignKey("QuestionFinal", on_delete= models.SET_NULL, null=True, blank=True, related_name = "prod_question")
 
     def __str__(self):
         return str(self.id)

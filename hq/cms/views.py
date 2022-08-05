@@ -271,6 +271,18 @@ class QuestionProdViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     http_method_names = ['get']
 
+class AssessmentFinalViewSet(viewsets.ModelViewSet):
+    queryset = AssessmentFinal.objects.filter(isdeleted=False).order_by('-last_updated')
+    serializer_class = AssessmentFinalSerializer
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['get']
+
+class QuestionFinalViewSet(viewsets.ModelViewSet):
+    queryset = QuestionFinal.objects.filter(isdeleted=False).order_by('-created')
+    serializer_class = QuestionFinalSerializer
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['get']
+
 class ExhibitViewSet(viewsets.ModelViewSet):
     queryset = Exhibit.objects.filter(isdeleted=False).order_by('-created_on')
     serializer_class = ExhibitSerializer
@@ -887,10 +899,153 @@ class MigrateDBProd(APIView):
         user=Token.objects.get(key=access_token).user
 
         if user.access_role == 'ADMIN':
-            out = os.system('bash migrate.sh')
-            return Response({"Success":out},status=status.HTTP_200_OK)
+            if data["rollback"]:
+                out = os.system('bash rollback.sh')
+            else:
+                out = os.system('bash migrate.sh')
+            # error handling
+            if out == 0:
+                return Response({"Success":out},status=status.HTTP_200_OK)
+            else:
+                return Response({"Error":out},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response({"Not Authorized": "You don't have access to this entry"},status=status.HTTP_401_UNAUTHORIZED)
+
+
+class MoveToFinal(APIView):
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['post']
+
+
+    def post(self, request):
+        reqs = request.body.decode('utf-8')
+        data = json.loads(reqs)
+
+        access_token = request.headers['Authorization'].split(" ")[-1]
+        user=Token.objects.get(key=access_token).user
+
+        response = {}
+
+        if "assessmentId" in data:
+            aid = data["assessmentId"]
+            qlist = []
+            qorder = []
+            newid = None
+            exists = False
+            prod_qlist =[]
+            prod_order = []
+            for a in AssessmentProd.objects.filter(id=aid):
+                if a.final is not None:
+                    exists = True
+                qlist = a.qlist
+                qorder = a.qorder
+
+                if exists:
+                    final_entry = AssessmentFinal(
+                        code = a.code,
+                        problem_statement = a.problem_statement,
+                        name = a.name,
+                        # how to connect qlist dev to prod
+                        #qlist = a.qlist,
+                        #qorder = a.qorder,
+                        role = a.role,
+                        remarks = a.remarks,
+                        creator = a.creator,
+                        approved_by = user,
+                        isdeleted = a.isdeleted
+                    )
+                    # setting the final question
+                    a.final = final_entry
+                    a.save()
+                    final_entry.save()
+                    newid = final_entry.id
+
+                else:
+                    for final in AssessmentFinal.objects.filter(id = a.final):
+                        final.code = a.code
+                        final.problem_statement = a.problem_statement,
+                        final.name = a.name,
+                        final.role = a.role,
+                        final.remarks = a.remarks,
+                        final.creator = a.creator,
+                        final.approved_by = a.approved_by,
+                        final.isdeleted = a.isdeleted
+                        newid = a.final
+
+                        final.save()
+
+                for qid in qorder:
+                    for q in QuestionProd.objects.filter(id=qid):
+                        if q.finalques is None:
+                            final = QuestionProd(
+                                code = q.code,
+                                context = q.context,
+                                text = q.text,
+                                options = q.options,
+                                score_weight = q.score_weight,
+                                creator = user,
+                                idealtime = q.idealtime,
+                                difficulty_level = q.difficulty_level,
+                                misc = q.misc,
+                                qtype = q.qtype,
+                                stage = q.stage
+                            )
+
+                            final.save()
+                            final.cwf.set(q.cwf.all())
+                            final.kt.set(q.kt.all())
+                            final.role.set(q.role.all())
+                            final.skills.set(q.skills.all())
+                            final.subskill.set(q.subskill.all())
+                            final.exhibits.set(q.exhibits.all())
+                            final.excels.set(q.excels.all())
+
+                            final.finalques = final
+
+                            final.save()
+
+                            prod_qlist.append(final)
+                            prod_order.append(final.id)
+
+                        else:
+                            for final in QuestionFinal.objects.filter(id=q.finalques):
+                                final.code = q.code
+                                final.context = q.context
+                                final.text = q.text
+                                final.options = q.options
+                                final.score_weight = q.score_weight
+                                final.creator = user
+                                final.idealtime = q.idealtime
+                                final.difficulty_level = q.difficulty_level
+                                final.misc = q.misc
+                                final.qtype = q.qtype
+                                final.stage = q.stag
+
+                                final.cwf.set(q.cwf.all())
+                                final.kt.set(q.kt.all())
+                                final.role.set(q.role.all())
+                                final.skills.set(q.skills.all())
+                                final.subskill.set(q.subskill.all())
+                                final.exhibits.set(q.exhibits.all())
+                                final.excels.set(q.excels.all())
+
+                                final.save()
+
+                                prod_qlist.append(final)
+                                prod_order.append(final.id)
+
+            queryset = AssessmentFinal.objects.filter(id=newid)
+            for fa in queryset:
+                fa.qlist = prod_qlist
+                fa.qorder= prod_order
+                fa.save()
+
+            serializer = AssessmentFinal(queryset, many=True)
+            return Response(serializer.data)
+        else:
+            return Response({"Error": "No assessmentId given"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 class SnippetViewSet(viewsets.ModelViewSet):
     """
