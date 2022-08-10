@@ -60,7 +60,9 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
+
         user = authenticate_token(self, request)
+        print(user)
         #print(user["user_id"])
         # Admin can view everything
         if user["role"] == "MEMBER":
@@ -141,9 +143,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         queryset = Question.objects.filter(isdeleted=False)
-
+        
         user = authenticate_token(self, request)
         #print(request.GET["assessmentid"])
+        print(request.GET)
+
         # filtering from the user
         assessment_queryset = Assessment.objects.filter(Q(creator=user["user_id"]) | Q(assigned_to=user["user_id"]))
         assessments = []
