@@ -29,6 +29,7 @@ SECRET_KEY = 'django-insecure-dxb!cw)eb6n=22f3ycj@y5q8hi8jrr7tunn0=s=$5xhx1zr#of
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+ALLOWED_HOSTS = ["35.202.254.139", "localhost", "cms.hirequotient.co"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
