@@ -68,22 +68,22 @@ class AssessmentViewSet(viewsets.ModelViewSet):
             queryset = Assessment.objects.filter(isdeleted=False)
 
         if "status" in request.GET:
-            status = self.request.GET.get('status')
+            status = request.GET.get('status')
             if role:
                 queryset = queryset.filter(status__in=status)
 
         if "code" in request.GET:
-            code = self.request.GET.get('code')
+            code = request.GET.get('code')
             if code:
                 queryset = queryset.filter(code__in=code)
 
         if "created_by" in request.GET:
-            created_by = self.request.GET.get('created_by')
+            created_by = request.GET.get('created_by')
             if role:
                 queryset = queryset.filter(created_by__in=created_by)
 
         if "role" in request.GET:
-            role = self.request.GET.get('role')
+            role = request.GET.get('role')
             if role:
                 queryset = queryset.filter(role__in=role)
 
@@ -177,36 +177,36 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         if "assessmentid" in request.GET:
             # queryset = queryset.filter(assessmentid= request.GET["assessmentid"]).distinct()
-            assessment = self.request.GET.getlist('assessmentid')
+            assessment = request.GET.getlist('assessmentid')
             if assessment:
                 queryset = queryset.filter(assessmentid__in=assessment)
 
         if "cwf" in request.GET:
             # queryset = queryset.filter(cwf=request.GET["cwf"]).distinct()
-            cwf = self.request.GET.getlist('cwf')
+            cwf = request.GET.getlist('cwf')
             if cwf:
                 queryset = queryset.filter(cwf__in=cwf)
 
         if "kt" in request.GET:
             # queryset = queryset.filter(kt=request.GET["kt"]).distinct()
-            kt = self.request.GET.get('kt')
+            kt = request.GET.get('kt')
             if kt:
                 queryset = queryset.filter(kt__in=kt)
 
         if "created_by" in request.GET:
             # queryset = queryset.filter(creator = request.GET["created_by"]).distinct()
-            creator = self.request.GET.get('created_by')
+            creator = request.GET.get('created_by')
             if creator:
                 queryset = queryset.filter(creator__in=creator)
 
         if "role" in request.GET:
             # queryset = queryset.filter(role=request.GET["role"]).distinct()
-            role = self.request.GET.get('role')
+            role = request.GET.get('role')
             if role:
                 queryset = queryset.filter(role__in=role)
 
         if "code" in request.GET:
-            code = self.request.GET.get('code')
+            code = request.GET.get('code')
             if code:
                 queryset = queryset.filter(code__in=code)
 
@@ -221,7 +221,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         queryset = related_questions(queryset)
         # realted question filter
         if "related_ques" in request.GET:
-            related_ques = self.request.GET.get('related_ques')
+            related_ques = request.GET.get('related_ques')
             if related_ques:
                 queryset = queryset.filter(related_ques__in=related_ques)
         serializer = QuestionSerializer(queryset, many=True)
