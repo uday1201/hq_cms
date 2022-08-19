@@ -68,27 +68,32 @@ class AssessmentViewSet(viewsets.ModelViewSet):
             queryset = Assessment.objects.filter(isdeleted=False)
 
         if "status" in request.GET:
-            status = request.GET.get('status')
-            if role:
+            status = request.GET.getlist('status')
+            if status:
                 queryset = queryset.filter(status__in=status)
 
         if "code" in request.GET:
-            code = request.GET.get('code')
+            code = request.GET.getlist('code')
             if code:
                 queryset = queryset.filter(code__in=code)
 
-        if "created_by" in request.GET:
-            created_by = request.GET.get('created_by')
-            if role:
-                queryset = queryset.filter(created_by__in=created_by)
+        if "creator" in request.GET:
+            created_by = request.GET.getlist('creator')
+            if created_by:
+                queryset = queryset.filter(creator__in=created_by)
 
         if "role" in request.GET:
-            role = request.GET.get('role')
+            role = request.GET.getlist('role')
             if role:
                 queryset = queryset.filter(role__in=role)
 
         if "starttime" in request.GET and "endtime" in request.GET:
             queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
+        #FIXME - Correct filtering in this
+        elif "starttime" in request.GET:
+            queryset = queryset.filter(created__gte=request.GET["starttime"]).distinct()
+        elif "endtime" in request.GET:
+            queryset = queryset.filter(created__lte=request.GET["endtime"]).distinct()
 
         queryset_order = queryset.order_by('-last_updated')
         serializer = AssessmentSerializer(queryset_order, many=True)
@@ -189,29 +194,34 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         if "kt" in request.GET:
             # queryset = queryset.filter(kt=request.GET["kt"]).distinct()
-            kt = request.GET.get('kt')
+            kt = request.GET.getlist('kt')
             if kt:
                 queryset = queryset.filter(kt__in=kt)
 
         if "created_by" in request.GET:
             # queryset = queryset.filter(creator = request.GET["created_by"]).distinct()
-            creator = request.GET.get('created_by')
+            creator = request.GET.getlist('created_by')
             if creator:
                 queryset = queryset.filter(creator__in=creator)
 
         if "role" in request.GET:
             # queryset = queryset.filter(role=request.GET["role"]).distinct()
-            role = request.GET.get('role')
+            role = request.GET.getlist('role')
             if role:
                 queryset = queryset.filter(role__in=role)
 
         if "code" in request.GET:
-            code = request.GET.get('code')
+            code = request.GET.getlist('code')
             if code:
                 queryset = queryset.filter(code__in=code)
 
         if "starttime" in request.GET and "endtime" in request.GET:
             queryset = queryset.filter(created__range=[request.GET["starttime"],request.GET["endtime"]]).distinct()
+        #FIXME - Correct filtering in this
+        elif "starttime" in request.GET:
+            queryset = queryset.filter(created__gte=request.GET["starttime"]).distinct()
+        elif "endtime" in request.GET:
+            queryset = queryset.filter(created__lte=request.GET["endtime"]).distinct()
 
         # return comments linked to the questions
         queryset = get_comments(queryset)
@@ -573,6 +583,7 @@ class CopyQuestion(APIView):
             #org_ques = q
         )
 
+        # For loop not required
         if valid_data["qtype"] is not None:
             for q in Qtype.objects.filter(qtype_id=valid_data["qtype"]):
                 derived_ques.qtype = q

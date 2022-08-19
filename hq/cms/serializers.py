@@ -8,10 +8,14 @@ from django.http import HttpResponse
 from .models import *
 
 class AssessmentSerializer(serializers.ModelSerializer):
-    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    creator = serializers.ModelField(model_field=Assessment._meta.get_field('creator'), default=serializers.CurrentUserDefault(), read_only=True)
+    
+    created = serializers.ModelField(model_field=Assessment._meta.get_field('created'), read_only=True)
+    last_updated = serializers.ModelField(model_field=Assessment._meta.get_field('last_updated'), read_only=True)
+
     class Meta:
         model = Assessment
-        fields = ['id', 'name','problem_statement','qlist','qorder','role','remarks','creator','approved_by','assigned_to','status','isdeleted']
+        fields = ['id', 'name','problem_statement','qlist','qorder','role','remarks','creator','approved_by','assigned_to','status','isdeleted', 'created', 'last_updated']
 
 class AssessmentProdSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -26,8 +30,15 @@ class AssessmentFinalSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QuestionSerializer(serializers.ModelSerializer):
-    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    # creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    # last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    creator = serializers.ModelField(model_field=Question._meta.get_field('creator'), default=serializers.CurrentUserDefault(), read_only=True)
+    last_edited_by = serializers.ModelField(model_field=Question._meta.get_field('last_edited_by'), default=serializers.CurrentUserDefault(), read_only=True)
+
+    created = serializers.ModelField(model_field=Question._meta.get_field('created'), read_only=True)
+    last_edited = serializers.ModelField(model_field=Question._meta.get_field('last_edited'), read_only=True)
+
+
     comments = serializers.JSONField(default=list,read_only=True,required=False)
     qtype_name = serializers.CharField(max_length=100, default="NA", read_only=True)
     related_ques = serializers.JSONField(default=list,read_only=True,required=False)
@@ -35,7 +46,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','qtype_name','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','derivation','org_ques','idealtime','isdeleted','assessmentid','misc','comments','related_ques']
+        fields = ['id','cwf','kt','stage','exhibits','excels','context','text','qtype','qtype_name','options','score_type','score_weight','creator','role','approved_by','last_edited_by','status','difficulty_level','derivation','org_ques','idealtime','isdeleted','assessmentid','misc','comments','related_ques', 'created', 'last_edited']
 
     def update(self, instance, validated_data):
         demo = Question.objects.get(pk=instance.id)
