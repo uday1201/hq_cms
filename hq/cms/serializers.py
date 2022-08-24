@@ -120,7 +120,19 @@ class ExcelSerializer(serializers.ModelSerializer):
     creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = Excel
-        fields = ['id','file','alt_text','isdeleted','creator']
+        fields = ['id','file','alt_text','type','isdeleted','creator']
+
+    def create(self, validated_data):
+        file=validated_data.pop('file')
+        alt_text=validated_data.pop('alt_text')
+        return Excel.objects.create(file=file,alt_text=alt_text)
+
+    def to_representation(self, instance):
+        response = super(ExcelSerializer, self).to_representation(instance)
+        if instance.file:
+            response['file'] = instance.file.url
+        return response
+
 
 class CwfSerializer(serializers.ModelSerializer):
     #cwf_creator = serializers.StringRelatedField(default=serializers.CurrentUserDefault(), read_only=True)

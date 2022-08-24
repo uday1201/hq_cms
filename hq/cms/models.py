@@ -277,12 +277,15 @@ class Role(models.Model):
     def __str__(self):
         return self.name
 
+def exhibit_upload_to(instance, filename):
+    return 'exhibits/{filename}'.format(filename=filename)
+
 class Exhibit(models.Model):
     id = models.AutoField(primary_key=True)
     # we have 2 choices here, if we want to store the assests externally on the cloud we need to have a URL field, otherwise we can also use Django media manager with imagefield
     #url = models.URLField(max_length = 250)
     #file = models.FileField(upload_to = 'exhibits/')
-    image = models.ImageField(upload_to = 'exhibits/', blank=True)
+    image = models.ImageField(upload_to = exhibit_upload_to, blank=True)
     alt_text = models.CharField(max_length = 100, blank = True)
     type = models.CharField(max_length = 100, blank = True, default="exhibit")
     created_on = models.DateTimeField(auto_now_add=True)
@@ -294,10 +297,14 @@ class Exhibit(models.Model):
     def __str__(self):
         return self.alt_text
 
+def file_upload_to(instance, filename):
+    return 'files/{filename}'.format(filename=filename)
+
 class Excel(models.Model):
     id = models.AutoField(primary_key=True)
     #url = models.URLField(max_length = 250)
-    file = models.FileField(upload_to = 'exhibits/', blank=True)
+    file = models.FileField(upload_to = file_upload_to, blank=True)
+    type = models.CharField(max_length = 100, blank = True, default="any file")
     alt_text = models.CharField(max_length = 100, blank = True)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)

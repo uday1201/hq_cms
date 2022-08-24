@@ -563,7 +563,8 @@ class CopyQuestion(APIView):
 
 
         derived_ques = Question(
-            code = valid_data["code"],
+            # code = valid_data["code"],
+            code = "",
             #stage = valid_data["stage"],
             context = valid_data["context"],
             text = valid_data["text"],
@@ -577,7 +578,8 @@ class CopyQuestion(APIView):
             difficulty_level = valid_data["difficulty_level"],
             misc = valid_data["misc"],
             # setting the assessment as the current one
-            status = valid_data["status"],
+            # status = valid_data["status"],
+            status = "DEV",
             # setting it as derived question and original question relationship
             derivation = "DERIVED",
             #org_ques = q
@@ -605,8 +607,10 @@ class CopyQuestion(APIView):
         derived_ques.cwf.set(valid_data["cwf"])
         derived_ques.kt.set(valid_data["kt"])
         derived_ques.role.set(valid_data["role"])
-        derived_ques.skills.set(valid_data["skills"])
-        derived_ques.subskill.set(valid_data["subskill"])
+        if 'skills' in valid_data:
+            derived_ques.skills.set(valid_data["skills"])
+        if 'subskill' in valid_data:
+            derived_ques.subskill.set(valid_data["subskill"])
         derived_ques.exhibits.set(valid_data["exhibits"])
         derived_ques.excels.set(valid_data["excels"])
 
