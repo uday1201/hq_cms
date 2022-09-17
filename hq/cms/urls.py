@@ -34,6 +34,7 @@ urlpatterns = [
     path('docs/', include_docs_urls(title='Snippet API')),
     path('api/logout/', views.Logout.as_view(), name='Logout'),
     path('api/CwfKtStage/', views.CwfKtStage.as_view(), name='CwfKtStage'),
+    path('api/AssessInfo/', views.AssessInfo.as_view(), name='AssessInfo'),
     path('api/create-copy/', views.CopyQuestion.as_view(), name='CopyQuestion'),
     path('api/MoveToProd/', views.MoveToProd.as_view(), name='MoveToProd'),
     path('api/MigrateDBProd/', views.MigrateDBProd.as_view(), name='MigrateDBProd'),

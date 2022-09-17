@@ -1062,6 +1062,28 @@ class MoveToFinal(APIView):
 
 
 
+class AssessInfo(APIView):
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ['get']
+
+    def get(self, request):
+        response = {}
+        code = request.GET["code"]
+        assessment_obj = Assessment.objects.filter(isdeleted=False).filter(code=code).distinct()
+        for a in assessment_obj:
+            print(a.id)
+        if assessment_obj:
+            serializer = AssessmentSerializer(assessment_obj, many=True)
+            response["assessment"] = serializer.data
+            qlist = response["assessment"][0]["qlist"]
+            question_obj = Question.objects.filter(isdeleted=False).filter(id__in=qlist).distinct()
+            ques_serializer = QuestionSerializer(question_obj, many=True)
+            response["assessment"][0]["qlist_info"] = ques_serializer.data
+            response["status"] = 200
+
+        return Response(response)
+
+
 class SnippetViewSet(viewsets.ModelViewSet):
     """
     This viewset automatically provides `list`, `create`, `retrieve`,
