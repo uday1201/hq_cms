@@ -14,6 +14,24 @@ from pathlib import Path
 from datetime import timedelta
 from django.conf import settings
 from os import environ
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn="https://fd76438e4ee64ffc8709bef6d2ec1bfc@o1398692.ingest.sentry.io/6777166",
+    integrations=[
+        DjangoIntegration(),
+    ],
+    environment=environ.get('ENV', "prod"),
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0,
+
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    send_default_pii=True
+)
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
