@@ -231,7 +231,7 @@ class Question(models.Model):
     excels = models.ManyToManyField("Excel", blank=True)
     context = models.JSONField(default=list, blank=True)
     # content of the question
-    text = models.CharField(max_length = 100, blank = False, null = False)
+    text = models.TextField(blank = False, null = False)
     qtype = models.ForeignKey("Qtype", on_delete = models.SET_NULL, null=True)
     options = models.JSONField(blank=True, null=True)
     score_type = models.CharField(max_length = 10, blank = False, null = False)
