@@ -30,10 +30,10 @@ class AssessmentFinalSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QuestionSerializer(serializers.ModelSerializer):
-    # creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    # last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    creator = serializers.ModelField(model_field=Question._meta.get_field('creator'), default=serializers.CurrentUserDefault(), read_only=True)
-    last_edited_by = serializers.ModelField(model_field=Question._meta.get_field('last_edited_by'), default=serializers.CurrentUserDefault(), read_only=True)
+    creator = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    last_edited_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    # creator = serializers.ModelField(model_field=Question._meta.get_field('creator'), default=serializers.CurrentUserDefault(), read_only=True)
+    # last_edited_by = serializers.ModelField(model_field=Question._meta.get_field('last_edited_by'), default=serializers.CurrentUserDefault(), read_only=True)
 
     created = serializers.ModelField(model_field=Question._meta.get_field('created'), read_only=True)
     last_edited = serializers.ModelField(model_field=Question._meta.get_field('last_edited'), read_only=True)
